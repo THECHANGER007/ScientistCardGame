@@ -1807,7 +1807,7 @@ namespace ScientistCardGame.Views
             UpdateGameUI();
         }
 
-        // DNA: Click deck to draw (only in draw phase)
+        // DNA: Click deck to draw (only in draw phase)...........
         private async void OnPlayerDeckTapped(object sender, EventArgs e)
         {
             // DNA: Check if game is initialized
