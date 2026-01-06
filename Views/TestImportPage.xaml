@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="ScientistCardGame.Views.TestImportPage"
+             Title="Import DNA Data Test">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="20">
+
+            <!-- Title -->
+            <Label Text="🧬 DNA Data Import Test"
+                   FontSize="28"
+                   FontAttributes="Bold"
+                   HorizontalOptions="Center"
+                   TextColor="#1F4788"/>
+
+            <Label Text="This will import all 120 cards from Excel files into the database"
+                   FontSize="14"
+                   HorizontalOptions="Center"
+                   TextColor="Gray"/>
+
+            <!-- Import Button -->
+            <Button Text="🚀 Import All Cards (100 Characters + 20 Special)"
+                    Clicked="OnImportClicked"
+                    BackgroundColor="#28a745"
+                    TextColor="White"
+                    FontSize="16"
+                    Padding="15"
+                    CornerRadius="10"/>
+
+            <!-- Status Label -->
+            <Label x:Name="StatusLabel"
+                   Text="Ready to import..."
+                   FontSize="14"
+                   TextColor="Blue"
+                   HorizontalOptions="Center"/>
+
+            <!-- Results Frame -->
+            <Frame BorderColor="#1F4788"
+                   CornerRadius="10"
+                   Padding="15"
+                   IsVisible="False"
+                   x:Name="ResultsFrame">
+
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="📊 Import Results"
+                           FontSize="20"
+                           FontAttributes="Bold"
+                           TextColor="#1F4788"/>
+
+                    <Label x:Name="ResultsLabel"
+                           FontSize="14"
+                           TextColor="Black"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Test Query Buttons -->
+            <Label Text="🔍 Test Database Queries"
+                   FontSize="18"
+                   FontAttributes="Bold"
+                   TextColor="#1F4788"
+                   Margin="0,20,0,0"/>
+
+            <Button Text="Show All LEGENDARY Cards"
+                    Clicked="OnShowLegendaryClicked"
+                    BackgroundColor="#FFD700"
+                    TextColor="Black"/>
+
+            <Button Text="Show All SCIENCE Field Cards"
+                    Clicked="OnShowScienceClicked"
+                    BackgroundColor="#17a2b8"
+                    TextColor="White"/>
+
+            <Button Text="Show All DISCOVERY Cards"
+                    Clicked="OnShowDiscoveryClicked"
+                    BackgroundColor="#90EE90"
+                    TextColor="Black"/>
+
+            <Button Text="Show All PARADOX Cards"
+                    Clicked="OnShowParadoxClicked"
+                    BackgroundColor="#FFB6C1"
+                    TextColor="Black"/>
+
+            <!-- Query Results -->
+            <Frame BorderColor="Gray"
+                   CornerRadius="10"
+                   Padding="15"
+                   IsVisible="False"
+                   x:Name="QueryFrame">
+
+                <ScrollView MaximumHeightRequest="300">
+                    <Label x:Name="QueryResultsLabel"
+                           FontSize="12"
+                           TextColor="Black"/>
+                </ScrollView>
+            </Frame>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

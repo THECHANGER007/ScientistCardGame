@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="ScientistCardGame.Views.GamePage"
+             Title="Scientist Card Game - Battle!">
+
+    <Grid RowDefinitions="Auto,*,Auto,*,Auto" Padding="5" BackgroundColor="#2C3E50">
+
+        <Frame Grid.Row="0" BorderColor="#E74C3C" CornerRadius="10" Padding="10" 
+       BackgroundColor="#34495E" Margin="5">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+
+                <!-- OPPONENT DECK PILE -->
+                <Frame Grid.Column="0" 
+               WidthRequest="80" HeightRequest="100"
+               CornerRadius="8" 
+               BorderColor="Purple" 
+               BackgroundColor="#6A0DAD"
+               Padding="10"
+               Margin="5">
+                    <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center">
+                        <Label Text="🎴" FontSize="32" HorizontalOptions="Center"/>
+                        <Label x:Name="OpponentDeckCountLabel" Text="30" 
+                       FontSize="16" FontAttributes="Bold" 
+                       TextColor="White" HorizontalOptions="Center"/>
+                        <Label Text="DECK" FontSize="10" TextColor="White" HorizontalOptions="Center"/>
+                    </VerticalStackLayout>
+                </Frame>
+                <!-- OPPONENT GRAVEYARD -->
+                <Frame Grid.Column="0" 
+       WidthRequest="80" HeightRequest="100"
+       CornerRadius="8" 
+       BorderColor="Gray" 
+       BackgroundColor="#2C2C2C"
+       Padding="10"
+       Margin="90,5,5,5">
+                    <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center">
+                        <Label Text="⚰️" FontSize="32" HorizontalOptions="Center"/>
+                        <Label x:Name="OpponentGraveyardCountLabel" Text="0" 
+               FontSize="16" FontAttributes="Bold" 
+               TextColor="White" HorizontalOptions="Center"/>
+                        <Label Text="GRAVE" FontSize="9" TextColor="White" HorizontalOptions="Center"/>
+                    </VerticalStackLayout>
+                    <Frame.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnOpponentGraveyardTapped"/>
+                    </Frame.GestureRecognizers>
+                </Frame>
+
+                <!-- OPPONENT INFO -->
+                <VerticalStackLayout Grid.Column="1" Margin="10,0,0,0">
+                    <Label x:Name="OpponentNameLabel" Text="Opponent" 
+                   FontSize="18" FontAttributes="Bold" TextColor="White"/>
+                    <Label x:Name="OpponentHandCountLabel" Text="Hand: 5" 
+                   FontSize="12" TextColor="LightGray"/>
+                </VerticalStackLayout>
+
+                <Label Grid.Column="2" x:Name="OpponentHPLabel" Text="20000" 
+               FontSize="32" FontAttributes="Bold" 
+               TextColor="#E74C3C" VerticalOptions="Center"/>
+
+                <Label Grid.Column="3" Text="HP" 
+               FontSize="16" TextColor="White" 
+               VerticalOptions="Center" Margin="5,0,0,0"/>
+            </Grid>
+        </Frame>
+
+        <!-- OPPONENT FIELD -->
+        <Grid Grid.Row="1" ColumnDefinitions="*,Auto">
+            <!-- Monster Zone -->
+            <ScrollView Grid.Column="0" Orientation="Horizontal">
+                <HorizontalStackLayout x:Name="OpponentFieldContainer" Spacing="5" Padding="10"/>
+            </ScrollView>
+
+            <!-- Trap Zone -->
+            <Frame Grid.Column="1" 
+           WidthRequest="100" 
+           BorderColor="Pink" 
+           BackgroundColor="#4A0E4E"
+           CornerRadius="10"
+           Padding="5"
+           Margin="5">
+                <VerticalStackLayout>
+                    <Label Text="🔮 TRAPS" 
+                   FontSize="12" 
+                   FontAttributes="Bold" 
+                   TextColor="Pink" 
+                   HorizontalOptions="Center"/>
+                    <ScrollView MaximumHeightRequest="150">
+                        <VerticalStackLayout x:Name="OpponentTrapZoneContainer" Spacing="3"/>
+                    </ScrollView>
+                </VerticalStackLayout>
+            </Frame>
+        </Grid>
+
+        <!-- CENTER - TURN INFO -->
+        <Frame Grid.Row="2" BorderColor="#F39C12" CornerRadius="10" 
+               Padding="15" BackgroundColor="#34495E" Margin="5">
+            <VerticalStackLayout Spacing="5">
+                <Label x:Name="TurnInfoLabel" Text="Turn 1 - Your Turn" 
+                       FontSize="20" FontAttributes="Bold" 
+                       TextColor="#F39C12" HorizontalOptions="Center"/>
+
+                <!-- DNA: Turn Timer Display -->
+                <Label x:Name="TimerLabel"
+       Text="⏱️ 01:00"
+       FontSize="20"
+       FontAttributes="Bold"
+       TextColor="#E74C3C"
+       HorizontalOptions="Center"
+       IsVisible="False"
+       Margin="0,5,0,0"/>
+
+                <Label x:Name="PhaseLabel" Text="Draw Phase" 
+                       FontSize="16" TextColor="White" 
+                       HorizontalOptions="Center"/>
+
+                <HorizontalStackLayout Spacing="10" HorizontalOptions="Center">
+                    <Button x:Name="NextPhaseButton" Text="Next Phase ▶" 
+                            Clicked="OnNextPhaseClicked"
+                            BackgroundColor="#27AE60" TextColor="White"/>
+
+                    <Button x:Name="EndTurnButton" Text="End Turn" 
+                            Clicked="OnEndTurnClicked"
+                            BackgroundColor="#E67E22" TextColor="White"/>
+                    <Button Text="🔄 Restart" 
+        Clicked="OnRestartClicked"
+        BackgroundColor="#95A5A6"
+        TextColor="White"
+        CornerRadius="8"
+        Padding="10"
+        Margin="5"/>
+                    <Button Text="📊 Stats" 
+        Clicked="OnStatsClicked"
+        BackgroundColor="#3498DB"
+        TextColor="White"
+        CornerRadius="8"
+        Padding="10"
+        Margin="5"/>
+                    <Button Text="⏱️ Timer" 
+        Clicked="OnTimerSettingsClicked"
+        BackgroundColor="#9B59B6"
+        TextColor="White"
+        CornerRadius="8"
+        Padding="10"
+        Margin="5"/>
+                </HorizontalStackLayout>
+
+                <Label x:Name="MessageLabel" Text="" 
+                       FontSize="14" TextColor="#3498DB" 
+                       HorizontalOptions="Center"/>
+            </VerticalStackLayout>
+        </Frame>
+
+        <!-- PLAYER FIELD -->
+        <Grid Grid.Row="3" ColumnDefinitions="*,Auto">
+            <!-- Monster Zone -->
+            <ScrollView Grid.Column="0" Orientation="Horizontal">
+                <HorizontalStackLayout x:Name="PlayerFieldContainer" Spacing="5" Padding="10"/>
+            </ScrollView>
+
+            <!-- Trap Zone -->
+            <Frame Grid.Column="1" 
+           WidthRequest="100" 
+           BorderColor="Pink" 
+           BackgroundColor="#4A0E4E"
+           CornerRadius="10"
+           Padding="5"
+           Margin="5">
+                <VerticalStackLayout>
+                    <Label Text="🔮 TRAPS" 
+                   FontSize="12" 
+                   FontAttributes="Bold" 
+                   TextColor="Pink" 
+                   HorizontalOptions="Center"/>
+                    <ScrollView MaximumHeightRequest="150">
+                        <VerticalStackLayout x:Name="PlayerTrapZoneContainer" Spacing="3"/>
+                    </ScrollView>
+                </VerticalStackLayout>
+            </Frame>
+        </Grid>
+
+        <!-- PLAYER AREA (Bottom) -->
+        <Grid Grid.Row="4" RowDefinitions="Auto,Auto">
+
+            <!-- Player Info -->
+            <Frame Grid.Row="0" BorderColor="#27AE60" CornerRadius="10" Padding="10" 
+           BackgroundColor="#34495E" Margin="5">
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+
+                    <!-- PLAYER DECK PILE -->
+                    <Frame Grid.Column="0" 
+                   WidthRequest="80" HeightRequest="100"
+                   CornerRadius="8" 
+                   BorderColor="Purple" 
+                   BackgroundColor="#6A0DAD"
+                   Padding="10"
+                   Margin="5">
+                        <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center">
+                            <Label Text="🎴" FontSize="32" HorizontalOptions="Center"/>
+                            <Label x:Name="PlayerDeckCountLabel" Text="30" 
+                           FontSize="16" FontAttributes="Bold" 
+                           TextColor="White" HorizontalOptions="Center"/>
+                            <Label Text="DECK" FontSize="10" TextColor="White" HorizontalOptions="Center"/>
+                        </VerticalStackLayout>
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnPlayerDeckTapped"/>
+                        </Frame.GestureRecognizers>
+                    </Frame>
+
+                    <!-- PLAYER GRAVEYARD -->
+                    <Frame Grid.Column="0" 
+       WidthRequest="80" HeightRequest="100"
+       CornerRadius="8" 
+       BorderColor="Gray" 
+       BackgroundColor="#2C2C2C"
+       Padding="10"
+       Margin="90,5,5,5">
+                        <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center">
+                            <Label Text="⚰️" FontSize="32" HorizontalOptions="Center"/>
+                            <Label x:Name="PlayerGraveyardCountLabel" Text="0" 
+               FontSize="16" FontAttributes="Bold" 
+               TextColor="White" HorizontalOptions="Center"/>
+                            <Label Text="GRAVE" FontSize="9" TextColor="White" HorizontalOptions="Center"/>
+                        </VerticalStackLayout>
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnPlayerGraveyardTapped"/>
+                        </Frame.GestureRecognizers>
+                    </Frame>
+
+                    <!-- PLAYER INFO -->
+                    <VerticalStackLayout Grid.Column="1" Margin="10,0,0,0">
+                        <Label x:Name="PlayerNameLabel" Text="You" 
+                       FontSize="18" FontAttributes="Bold" TextColor="White"/>
+                        <Label x:Name="PlayerHandCountLabel" Text="Hand: 5 | Summons: 0/2" 
+                       FontSize="12" TextColor="LightGray"/>
+                    </VerticalStackLayout>
+
+                    <Label Grid.Column="2" x:Name="PlayerHPLabel" Text="20000" 
+                   FontSize="32" FontAttributes="Bold" 
+                   TextColor="#27AE60" VerticalOptions="Center"/>
+
+                    <Label Grid.Column="3" Text="HP" 
+                   FontSize="16" TextColor="White" 
+                   VerticalOptions="Center" Margin="5,0,0,0"/>
+                </Grid>
+            </Frame>
+
+            <!-- Player Hand -->
+            <ScrollView Grid.Row="1" Orientation="Horizontal">
+                <HorizontalStackLayout x:Name="PlayerHandContainer" 
+                                     Spacing="5" Padding="10" 
+                                     BackgroundColor="#1ABC9C"/>
+            </ScrollView>
+        </Grid>
+
+    </Grid>
+
+</ContentPage>
