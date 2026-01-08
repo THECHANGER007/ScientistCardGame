@@ -253,6 +253,60 @@
             </ScrollView>
         </Grid>
 
+        <!-- DNA: Big Phase Announcement Overlay (Yu-Gi-Oh style) -->
+        <Grid x:Name="PhaseAnnouncementOverlay" 
+      IsVisible="False"
+      BackgroundColor="#CC000000"
+      ZIndex="9999">
+            <Frame BackgroundColor="#1a1a2e"
+           BorderColor="#16213e"
+           CornerRadius="20"
+           Padding="40"
+           HorizontalOptions="Center"
+           VerticalOptions="Center"
+           HasShadow="True"
+           WidthRequest="500"
+           HeightRequest="200">
+                <VerticalStackLayout VerticalOptions="Center" 
+                           HorizontalOptions="Center">
+                    <Label x:Name="PhaseAnnouncementLabel"
+                   Text="DRAW PHASE"
+                   FontSize="48"
+                   FontAttributes="Bold"
+                   TextColor="#FFD700"
+                   HorizontalOptions="Center"
+                   HorizontalTextAlignment="Center"/>
+                    <Label x:Name="PhaseSubtitleLabel"
+                   Text="Draw your card!"
+                   FontSize="20"
+                   TextColor="White"
+                   HorizontalOptions="Center"
+                   HorizontalTextAlignment="Center"
+                   Margin="0,10,0,0"/>
+                </VerticalStackLayout>
+            </Frame>
+        </Grid>
+        <!-- DNA: Attack Indicator Arrow -->
+        <Grid x:Name="AttackIndicatorOverlay" 
+      IsVisible="False"
+      ZIndex="9998">
+            <BoxView Color="#FF0000"
+             Opacity="0.3"
+             WidthRequest="5"
+             HeightRequest="200"
+             HorizontalOptions="Center"
+             VerticalOptions="Center"
+             Rotation="45"/>
+            <Label Text="⚔️ ATTACK! ⚔️"
+           FontSize="32"
+           FontAttributes="Bold"
+           TextColor="#FF0000"
+           HorizontalOptions="Center"
+           VerticalOptions="Center"
+           BackgroundColor="#000000"
+           Padding="10"/>
+        </Grid>
+
     </Grid>
 
 </ContentPage>

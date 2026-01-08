@@ -74,44 +74,90 @@ namespace ScientistCardGame.Views
                 _turnTimer = new TurnTimerService(60);
                 _turnTimer.IsEnabled = false;
 
-                MessageLabel.Text = "STEP 6: Loading cards...";
+                // DNA: CHECK AND IMPORT DATABASE!
+                MessageLabel.Text = "STEP 6: Checking database...";
+                await Task.Delay(500);
+
+                bool isEmpty = await _databaseService.IsDatabaseEmptyAsync();
+
+                // DNA: FORCE REIMPORT (UNCOMMENT THIS LINE TO FORCE UPDATE)
+                isEmpty = true; // ← REMOVE THIS LINE AFTER FIRST SUCCESSFUL RUN!
+
+                // DNA: FORCE REIMPORT
+                isEmpty = true;
+
+                if (isEmpty)
+                {
+                    MessageLabel.Text = "📥 Importing cards from Excel... Please wait!";
+                    await Task.Delay(500);
+
+                    // Import from Excel file
+                    var importer = new DataImporter(_databaseService);
+
+                    // DNA: Get file from app package
+                    try
+                    {
+                        using var stream = await FileSystem.OpenAppPackageFileAsync("Data/Scientists_Cards_100_With_Effects_U.xlsx");
+                        var tempPath = Path.Combine(FileSystem.CacheDirectory, "temp_cards.xlsx");
+
+                        using (var fileStream = File.Create(tempPath))
+                        {
+                            await stream.CopyToAsync(fileStream);
+                        }
+
+                        await importer.ImportAllCardsAsync(tempPath, "Data/Special_Cards_20.xlsx");
+
+                        File.Delete(tempPath);
+                    }
+                    catch (Exception ex)
+                    {
+                        await DisplayAlert("❌ Import Error", $"Could not find Excel file!\n\n{ex.Message}", "OK");
+                        return;
+                    }
+
+                    MessageLabel.Text = "✅ Cards imported successfully!";
+                    await Task.Delay(1000);
+                }
+
+                MessageLabel.Text = "STEP 7: Loading cards...";
                 await Task.Delay(500);
 
                 await _deckBuilderService.LoadAvailableCardsAsync();
 
-                MessageLabel.Text = "STEP 7: Creating Player 1 deck...";
+                MessageLabel.Text = "STEP 8: Creating Player 1 deck...";
                 await Task.Delay(500);
 
                 var player1Deck = await _deckBuilderService.CreateStarterDeckAsync("Player 1");
 
-                MessageLabel.Text = "STEP 8: Creating AI deck...";
+                MessageLabel.Text = "STEP 9: Creating AI deck...";
                 await Task.Delay(500);
 
                 var player2Deck = await _deckBuilderService.CreateStarterDeckAsync("AI Opponent");
 
-                MessageLabel.Text = "STEP 9: Starting game engine...";
+                MessageLabel.Text = "STEP 10: Starting game engine...";
                 await Task.Delay(500);
 
                 _gameEngine = new GameEngine();
                 _gameEngine.StartNewGame("Player 1", "AI Opponent", player1Deck, player2Deck);
 
-                MessageLabel.Text = "STEP 10: Creating effects engine...";
+                MessageLabel.Text = "STEP 11: Creating effects engine...";
                 await Task.Delay(500);
 
                 var gameState = _gameEngine.GetGameState();
                 _effectsEngine = new EffectsEngine(gameState);
 
-                MessageLabel.Text = "STEP 11: Creating AI opponent...";
+                MessageLabel.Text = "STEP 12: Creating AI opponent...";
                 await Task.Delay(500);
 
                 _aiOpponent = new AIOpponent(_gameEngine, _effectsEngine);
 
-                MessageLabel.Text = "STEP 12: Updating UI...";
+                MessageLabel.Text = "STEP 13: Updating UI...";
                 await Task.Delay(500);
 
                 UpdateGameUI();
 
                 ShowMessage("🎮 Game Started!");
+
                 _isInitialized = true;
             }
             catch (Exception ex)
@@ -848,7 +894,8 @@ namespace ScientistCardGame.Views
 
                 if (!confirmDirect)
                     return;
-
+                // DNA: Show attack animation
+                await ShowAttackIndicator(attackingCard, null);
                 // DNA: Show bonus calculation
                 int baseATK = attackingCard.CurrentATK;
                 int finalATK = _gameEngine.CalculateFinalATK(attackingCard, null, gameState.CurrentPlayer);
@@ -860,6 +907,8 @@ namespace ScientistCardGame.Views
 
                 ShowMessage($"⚔️ {attackingCard.Name}: {baseATK} ATK{bonusInfo} = {finalATK} direct damage!");
                 await Task.Delay(1000);
+
+               
 
                 var result = _gameEngine.ExecuteDirectAttack(attackingCard, gameState.CurrentPlayer, opponent);
                 ShowMessage($"🔥 {result.Message}");
@@ -885,6 +934,9 @@ namespace ScientistCardGame.Views
 
                 ShowMessage($"⚔️ {attackingCard.Name}: {baseATK} ATK{bonusInfo} = {finalATK} total!");
                 await Task.Delay(1000);
+
+                // DNA: Show attack animation
+                await ShowAttackIndicator(attackingCard, targetCard);
 
                 // Execute battle with selected target
                 var result = _gameEngine.ExecuteBattle(attackingCard, targetCard,
@@ -1067,6 +1119,9 @@ namespace ScientistCardGame.Views
 
             if (gameState.CurrentPhase == "DRAW")
             {
+                ShowPhaseAnnouncement("DRAW PHASE", "Draw your card!");
+                await Task.Delay(1500);
+
                 var drawn = _gameEngine.ExecuteTurn();
                 if (drawn.DrawnCard != null)
                 {
@@ -1086,28 +1141,27 @@ namespace ScientistCardGame.Views
                     }
                 }
 
-                // CRITICAL FIX: Always advance phase!
                 gameState.NextPhase();
                 UpdateGameUI();
-                ShowMessage($"📋 {gameState.CurrentPhase} Phase");
             }
             else if (gameState.CurrentPhase == "MAIN")
             {
-                // Move to Battle Phase
+                ShowPhaseAnnouncement("MAIN PHASE", "Summon monsters and set traps!");
+                await Task.Delay(1500);
+
                 gameState.NextPhase();
                 UpdateGameUI();
-                ShowMessage($"⚔️ {gameState.CurrentPhase} Phase - Attack with your cards!");
             }
             else if (gameState.CurrentPhase == "BATTLE")
             {
-                // Move to End Phase
+                ShowPhaseAnnouncement("BATTLE PHASE", "Declare your attacks!");
+                await Task.Delay(1500);
+
                 gameState.NextPhase();
                 UpdateGameUI();
-                ShowMessage($"🔚 {gameState.CurrentPhase} Phase");
             }
             else if (gameState.CurrentPhase == "END")
             {
-                // Turn is ending - should use End Turn button
                 await DisplayAlert("ℹ️ End Turn", "Use the 'End Turn' button to finish your turn!", "OK");
             }
         }
@@ -1115,7 +1169,7 @@ namespace ScientistCardGame.Views
         private async void OnEndTurnClicked(object sender, EventArgs e)
         {
             // DNA: Stop timer when turn ends
-            if (_turnTimer != null) // ← FIX: Null check
+            if (_turnTimer != null)
             {
                 _turnTimer.StopTimer();
             }
@@ -1141,7 +1195,15 @@ namespace ScientistCardGame.Views
                     // End AI turn immediately
                     _gameEngine.EndTurn();
                     UpdateGameUI();
-                    ShowMessage("🔄 Your turn begins!");
+
+                    // DNA: Player's turn starts
+                    ShowPhaseAnnouncement("YOUR TURN", "Get ready to draw!");
+                    await Task.Delay(1500);
+
+                    gameState.NextPhase(); // Move to DRAW phase
+                    UpdateGameUI();
+                    ShowPhaseAnnouncement("DRAW PHASE", "Draw your card!");
+
                     return;
                 }
 
@@ -1149,10 +1211,17 @@ namespace ScientistCardGame.Views
                 NextPhaseButton.IsEnabled = false;
                 EndTurnButton.IsEnabled = false;
 
+                // DNA: AI TURN ANNOUNCEMENT
+                ShowPhaseAnnouncement("OPPONENT'S TURN", "AI is thinking...");
+                await Task.Delay(1500);
+
                 ShowMessage("🤖 AI Opponent is thinking...");
                 await Task.Delay(1000);
 
                 // DRAW PHASE
+                ShowPhaseAnnouncement("AI DRAW PHASE", "Opponent is drawing...");
+                await Task.Delay(1500);
+
                 gameState.NextPhase();
                 UpdateGameUI();
                 ShowMessage("🤖 AI Draw Phase...");
@@ -1166,6 +1235,9 @@ namespace ScientistCardGame.Views
                 }
 
                 // MAIN PHASE
+                ShowPhaseAnnouncement("AI MAIN PHASE", "Opponent is playing cards...");
+                await Task.Delay(1500);
+
                 gameState.NextPhase();
                 UpdateGameUI();
                 ShowMessage("🤖 AI Main Phase - Playing cards...");
@@ -1176,6 +1248,9 @@ namespace ScientistCardGame.Views
                 await Task.Delay(1500);
 
                 // BATTLE PHASE
+                ShowPhaseAnnouncement("AI BATTLE PHASE", "Opponent is attacking!");
+                await Task.Delay(1500);
+
                 gameState.NextPhase();
                 UpdateGameUI();
                 ShowMessage("🤖 AI Battle Phase - Attacking...");
@@ -1195,8 +1270,22 @@ namespace ScientistCardGame.Views
                 NextPhaseButton.IsEnabled = true;
                 EndTurnButton.IsEnabled = true;
 
+                // DNA: AUTO-ADVANCE TO PLAYER'S DRAW PHASE
+                await Task.Delay(1000);
+
+                ShowPhaseAnnouncement("YOUR TURN", "Get ready to draw!");
+                await Task.Delay(1500);
+
+                ShowMessage("🎮 Your turn! Draw Phase starting...");
+                await Task.Delay(500);
+
+                gameState.NextPhase(); // Move to DRAW phase automatically
+                UpdateGameUI();
+
+                ShowPhaseAnnouncement("DRAW PHASE", "Draw your card!");
+
                 // DNA: Start timer for player's turn
-                if (_turnTimer != null && _turnTimer.IsEnabled) // ← FIX: Null check
+                if (_turnTimer != null && _turnTimer.IsEnabled)
                 {
                     _turnTimer.StartTimer();
                 }
@@ -1475,6 +1564,8 @@ namespace ScientistCardGame.Views
                     ShowMessage($"🎯 AI's {attacker.Name} targets YOU directly!");
                     UpdateGameUI();
                     await Task.Delay(1200);
+                    // DNA: Show attack animation
+                    await ShowAttackIndicator(attacker, null);
 
                     var result = _gameEngine.ExecuteDirectAttack(attacker, ai, player);
                     log += $"⚔️ {attacker.Name} → {result.Damage} damage!\n";
@@ -1496,6 +1587,8 @@ namespace ScientistCardGame.Views
                     ShowMessage($"🎯 AI's {attacker.Name} ({baseATK}{bonusInfo} = {finalATK} ATK) targeting {target.Name} ({targetPos})!");
                     UpdateGameUI();
                     await Task.Delay(1500);
+                    // DNA: Show attack animation
+                    await ShowAttackIndicator(attacker, target);
 
                     var result = _gameEngine.ExecuteBattle(attacker, target, ai, player);
                     log += $"⚔️ {result.Message}\n";
@@ -2036,6 +2129,32 @@ namespace ScientistCardGame.Views
             {
                 InitializeGame();
             }
+        }
+        // DNA: Show big phase announcement (Yu-Gi-Oh style!)
+        private async void ShowPhaseAnnouncement(string phaseName, string subtitle)
+        {
+            PhaseAnnouncementLabel.Text = phaseName;
+            PhaseSubtitleLabel.Text = subtitle;
+            PhaseAnnouncementOverlay.IsVisible = true;
+
+            await Task.Delay(1500); // Show for 1.5 seconds
+
+            PhaseAnnouncementOverlay.IsVisible = false;
+        }
+        // DNA: Show attack indicator animation
+        private async Task ShowAttackIndicator(Card attacker, Card target = null)
+        {
+            AttackIndicatorOverlay.IsVisible = true;
+
+            string message = target != null
+                ? $"⚔️ {attacker.Name} → {target.Name}!"
+                : $"⚔️ {attacker.Name} → DIRECT ATTACK!";
+
+            ShowMessage(message);
+
+            await Task.Delay(1200);
+
+            AttackIndicatorOverlay.IsVisible = false;
         }
     }
 }
