@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="ScientistCardGame.Views.SettingsPage"
+             Title="Settings"
+             BackgroundColor="#0f172a">
+
+    <ScrollView>
+        <VerticalStackLayout 
+            Spacing="30"
+            Padding="40"
+            Margin="0,20,0,0">
+
+            <!-- TITLE -->
+            <Label 
+                Text="⚙️ SETTINGS"
+                FontSize="32"
+                FontAttributes="Bold"
+                TextColor="Gold"
+                HorizontalOptions="Center"
+                Margin="0,0,0,20"/>
+
+            <!-- MUSIC SECTION -->
+            <Frame 
+                BackgroundColor="#1e293b"
+                BorderColor="#475569"
+                CornerRadius="15"
+                Padding="20">
+
+                <VerticalStackLayout Spacing="15">
+
+                    <Label 
+                        Text="🎵 BACKGROUND MUSIC"
+                        FontSize="20"
+                        FontAttributes="Bold"
+                        TextColor="White"/>
+
+                    <!-- Music Toggle -->
+                    <HorizontalStackLayout Spacing="15">
+                        <Switch 
+                            x:Name="MusicToggle"
+                            IsToggled="True"
+                            OnColor="#22c55e"
+                            ThumbColor="White"
+                            Toggled="OnMusicToggled"/>
+                        <Label 
+                            Text="Enable Music"
+                            FontSize="16"
+                            TextColor="#94a3b8"
+                            VerticalOptions="Center"/>
+                    </HorizontalStackLayout>
+
+                    <!-- Music Volume -->
+                    <VerticalStackLayout Spacing="10">
+                        <HorizontalStackLayout Spacing="10">
+                            <Label 
+                                Text="Volume:"
+                                FontSize="16"
+                                TextColor="#94a3b8"
+                                VerticalOptions="Center"/>
+                            <Label 
+                                x:Name="MusicVolumeLabel"
+                                Text="30%"
+                                FontSize="16"
+                                FontAttributes="Bold"
+                                TextColor="Gold"
+                                VerticalOptions="Center"/>
+                        </HorizontalStackLayout>
+
+                        <Slider 
+                            x:Name="MusicVolumeSlider"
+                            Minimum="0"
+                            Maximum="100"
+                            Value="30"
+                            MinimumTrackColor="#22c55e"
+                            MaximumTrackColor="#475569"
+                            ThumbColor="Gold"
+                            ValueChanged="OnMusicVolumeChanged"/>
+                    </VerticalStackLayout>
+
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- SOUND EFFECTS SECTION -->
+            <Frame 
+                BackgroundColor="#1e293b"
+                BorderColor="#475569"
+                CornerRadius="15"
+                Padding="20">
+
+                <VerticalStackLayout Spacing="15">
+
+                    <Label 
+                        Text="🔔 SOUND EFFECTS"
+                        FontSize="20"
+                        FontAttributes="Bold"
+                        TextColor="White"/>
+
+                    <!-- Sound Toggle -->
+                    <HorizontalStackLayout Spacing="15">
+                        <Switch 
+                            x:Name="SoundToggle"
+                            IsToggled="True"
+                            OnColor="#22c55e"
+                            ThumbColor="White"
+                            Toggled="OnSoundToggled"/>
+                        <Label 
+                            Text="Enable Sound Effects"
+                            FontSize="16"
+                            TextColor="#94a3b8"
+                            VerticalOptions="Center"/>
+                    </HorizontalStackLayout>
+
+                    <!-- Sound Volume -->
+                    <VerticalStackLayout Spacing="10">
+                        <HorizontalStackLayout Spacing="10">
+                            <Label 
+                                Text="Volume:"
+                                FontSize="16"
+                                TextColor="#94a3b8"
+                                VerticalOptions="Center"/>
+                            <Label 
+                                x:Name="SoundVolumeLabel"
+                                Text="50%"
+                                FontSize="16"
+                                FontAttributes="Bold"
+                                TextColor="Gold"
+                                VerticalOptions="Center"/>
+                        </HorizontalStackLayout>
+
+                        <Slider 
+                            x:Name="SoundVolumeSlider"
+                            Minimum="0"
+                            Maximum="100"
+                            Value="50"
+                            MinimumTrackColor="#3b82f6"
+                            MaximumTrackColor="#475569"
+                            ThumbColor="Gold"
+                            ValueChanged="OnSoundVolumeChanged"/>
+                    </VerticalStackLayout>
+
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- DATA SECTION -->
+            <Frame 
+                BackgroundColor="#1e293b"
+                BorderColor="#475569"
+                CornerRadius="15"
+                Padding="20">
+
+                <VerticalStackLayout Spacing="15">
+
+                    <Label 
+                        Text="💾 DATA MANAGEMENT"
+                        FontSize="20"
+                        FontAttributes="Bold"
+                        TextColor="White"/>
+
+                    <Label 
+                        Text="Reset all statistics and game data"
+                        FontSize="14"
+                        TextColor="#94a3b8"
+                        Margin="0,0,0,10"/>
+
+                    <Button 
+                        Text="🗑️ RESET ALL STATISTICS"
+                        FontSize="16"
+                        FontAttributes="Bold"
+                        BackgroundColor="#dc2626"
+                        TextColor="White"
+                        HeightRequest="60"
+                        CornerRadius="10"
+                        Clicked="OnResetStatsClicked"/>
+
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- BACK BUTTON -->
+            <Button 
+                Text="← BACK TO MENU"
+                FontSize="18"
+                FontAttributes="Bold"
+                BackgroundColor="#475569"
+                TextColor="White"
+                HeightRequest="60"
+                CornerRadius="10"
+                Margin="0,20,0,0"
+                Clicked="OnBackClicked"/>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

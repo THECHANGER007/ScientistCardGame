@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="ScientistCardGame.Views.CharactersLibraryPage"
+             Title="Characters Library"
+             BackgroundColor="#0f172a">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- TITLE -->
+        <Label 
+            Grid.Row="0"
+            Text="📚 CHARACTERS LIBRARY"
+            FontSize="28"
+            FontAttributes="Bold"
+            TextColor="Gold"
+            HorizontalOptions="Center"
+            Margin="0,30,0,20"/>
+
+        <!-- SEARCH BAR -->
+        <Frame 
+            Grid.Row="1"
+            BackgroundColor="#1e293b"
+            BorderColor="#475569"
+            CornerRadius="10"
+            Padding="0"
+            Margin="20,0,20,20"
+            HeightRequest="50">
+
+            <SearchBar 
+                x:Name="SearchBar"
+                Placeholder="🔍 Search characters..."
+                PlaceholderColor="#94a3b8"
+                TextColor="White"
+                BackgroundColor="Transparent"
+                SearchCommand="{Binding SearchCommand}"
+                TextChanged="OnSearchTextChanged"/>
+        </Frame>
+
+        <!-- CHARACTERS LIST -->
+        <ScrollView Grid.Row="2">
+            <VerticalStackLayout 
+                x:Name="CharactersContainer"
+                Spacing="10"
+                Padding="20,0,20,20">
+
+                <!-- Character cards will be added here dynamically -->
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- BACK BUTTON -->
+        <Button 
+            Grid.Row="3"
+            Text="← BACK TO MENU"
+            FontSize="18"
+            FontAttributes="Bold"
+            BackgroundColor="#475569"
+            TextColor="White"
+            HeightRequest="60"
+            CornerRadius="10"
+            Margin="20"
+            Clicked="OnBackClicked"/>
+
+    </Grid>
+
+</ContentPage>

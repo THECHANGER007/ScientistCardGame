@@ -105,5 +105,8 @@ namespace ScientistCardGame.Services
             int count = await GetCardCountAsync();
             return count == 0;
         }
+
+       
+
     }
 }

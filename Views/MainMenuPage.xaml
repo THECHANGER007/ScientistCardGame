@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="ScientistCardGame.Views.MainMenuPage"
+             Title="Main Menu">
+
+    <Grid>
+        <!-- BACKGROUND IMAGE -->
+        <Image 
+            Source="background.png"
+            Aspect="AspectFill"
+            Opacity="0.4"/>
+
+        <!-- DARK OVERLAY -->
+        <BoxView 
+            Color="#0f172a"
+            Opacity="0.7"/>
+
+        <!-- CONTENT -->
+        <ScrollView>
+            <VerticalStackLayout 
+                Spacing="20"
+                Padding="40"
+                VerticalOptions="Center"
+                HorizontalOptions="Center">
+
+                <!-- ANIMATED TITLE -->
+                <VerticalStackLayout 
+                    Spacing="15"
+                    Margin="0,0,0,50">
+
+                    <Frame
+                        BackgroundColor="#1e293b"
+                        BorderColor="Gold"
+                        CornerRadius="20"
+                        Padding="20"
+                        HasShadow="True">
+
+                        <VerticalStackLayout Spacing="10">
+                            <Label 
+                                Text="🧬 SCIENTIST CARD GAME 🔬"
+                                FontSize="38"
+                                FontAttributes="Bold"
+                                TextColor="Gold"
+                                HorizontalOptions="Center"
+                                HorizontalTextAlignment="Center"
+                                LineBreakMode="WordWrap"/>
+
+                            <Label 
+                                Text="Knowledge • Strategy • Victory"
+                                FontSize="18"
+                                TextColor="#94a3b8"
+                                HorizontalOptions="Center"
+                                FontAttributes="Italic"/>
+                        </VerticalStackLayout>
+                    </Frame>
+
+                </VerticalStackLayout>
+
+                <!-- MENU BUTTONS WITH GLOW -->
+                <VerticalStackLayout 
+                    Spacing="18"
+                    WidthRequest="450">
+
+                    <!-- DUEL -->
+                    <Frame
+                        BackgroundColor="Transparent"
+                        BorderColor="#dc2626"
+                        CornerRadius="15"
+                        Padding="0"
+                        HasShadow="True">
+                        <Button 
+                            Text="⚔️  DUEL"
+                            FontSize="22"
+                            FontAttributes="Bold"
+                            BackgroundColor="#dc2626"
+                            TextColor="White"
+                            HeightRequest="75"
+                            CornerRadius="15"
+                            Clicked="OnDuelClicked"/>
+                    </Frame>
+
+                    <!-- SETTINGS -->
+                    <Frame
+                        BackgroundColor="Transparent"
+                        BorderColor="#2563eb"
+                        CornerRadius="15"
+                        Padding="0"
+                        HasShadow="True">
+                        <Button 
+                            Text="⚙️  SETTINGS"
+                            FontSize="22"
+                            FontAttributes="Bold"
+                            BackgroundColor="#2563eb"
+                            TextColor="White"
+                            HeightRequest="75"
+                            CornerRadius="15"
+                            Clicked="OnSettingsClicked"/>
+                    </Frame>
+
+                    <!-- STATISTICS -->
+                    <Frame
+                        BackgroundColor="Transparent"
+                        BorderColor="#16a34a"
+                        CornerRadius="15"
+                        Padding="0"
+                        HasShadow="True">
+                        <Button 
+                            Text="📊  STATISTICS"
+                            FontSize="22"
+                            FontAttributes="Bold"
+                            BackgroundColor="#16a34a"
+                            TextColor="White"
+                            HeightRequest="75"
+                            CornerRadius="15"
+                            Clicked="OnStatisticsClicked"/>
+                    </Frame>
+
+                    <!-- CHARACTERS LIBRARY -->
+                    <Frame
+                        BackgroundColor="Transparent"
+                        BorderColor="#9333ea"
+                        CornerRadius="15"
+                        Padding="0"
+                        HasShadow="True">
+                        <Button 
+                            Text="📚  CHARACTERS LIBRARY"
+                            FontSize="22"
+                            FontAttributes="Bold"
+                            BackgroundColor="#9333ea"
+                            TextColor="White"
+                            HeightRequest="75"
+                            CornerRadius="15"
+                            Clicked="OnCharactersClicked"/>
+                    </Frame>
+
+                    <!-- HOW TO PLAY -->
+                    <Frame
+                        BackgroundColor="Transparent"
+                        BorderColor="#ea580c"
+                        CornerRadius="15"
+                        Padding="0"
+                        HasShadow="True">
+                        <Button 
+                            Text="❓  HOW TO PLAY"
+                            FontSize="22"
+                            FontAttributes="Bold"
+                            BackgroundColor="#ea580c"
+                            TextColor="White"
+                            HeightRequest="75"
+                            CornerRadius="15"
+                            Clicked="OnHowToPlayClicked"/>
+                    </Frame>
+
+                    <!-- EXIT -->
+                    <Frame
+                        BackgroundColor="Transparent"
+                        BorderColor="#475569"
+                        CornerRadius="15"
+                        Padding="0"
+                        HasShadow="True">
+                        <Button 
+                            Text="🚪  EXIT"
+                            FontSize="22"
+                            FontAttributes="Bold"
+                            BackgroundColor="#475569"
+                            TextColor="White"
+                            HeightRequest="75"
+                            CornerRadius="15"
+                            Clicked="OnExitClicked"/>
+                    </Frame>
+
+                </VerticalStackLayout>
+
+                <!-- FOOTER -->
+                <VerticalStackLayout 
+                    Spacing="8"
+                    Margin="0,40,0,20"
+                    HorizontalOptions="Center">
+
+                    <Label 
+                        Text="Educational Card Game"
+                        FontSize="14"
+                        TextColor="#64748b"
+                        FontAttributes="Italic"
+                        HorizontalOptions="Center"/>
+
+                    <Label 
+                        Text="v1.0.0"
+                        FontSize="12"
+                        TextColor="#475569"
+                        HorizontalOptions="Center"/>
+                </VerticalStackLayout>
+
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+
+</ContentPage>

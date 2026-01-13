@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="ScientistCardGame.Views.StatsPage"
+             Title="Statistics"
+             BackgroundColor="#0f172a">
+
+    <ScrollView>
+        <VerticalStackLayout 
+            Spacing="30"
+            Padding="40"
+            Margin="0,20,0,0">
+
+            <!-- TITLE -->
+            <Label 
+                Text="📊 STATISTICS"
+                FontSize="32"
+                FontAttributes="Bold"
+                TextColor="Gold"
+                HorizontalOptions="Center"
+                Margin="0,0,0,20"/>
+
+            <!-- WIN/LOSS RECORD -->
+            <Frame 
+                BackgroundColor="#1e293b"
+                BorderColor="#475569"
+                CornerRadius="15"
+                Padding="25">
+
+                <VerticalStackLayout Spacing="20">
+
+                    <Label 
+                        Text="🏆 MATCH RECORD"
+                        FontSize="22"
+                        FontAttributes="Bold"
+                        TextColor="White"
+                        HorizontalOptions="Center"/>
+
+                    <!-- Wins -->
+                    <HorizontalStackLayout Spacing="15" HorizontalOptions="Center">
+                        <Label 
+                            Text="✅ WINS:"
+                            FontSize="20"
+                            TextColor="#22c55e"
+                            FontAttributes="Bold"
+                            WidthRequest="150"/>
+                        <Label 
+                            x:Name="WinsLabel"
+                            Text="0"
+                            FontSize="28"
+                            FontAttributes="Bold"
+                            TextColor="#22c55e"/>
+                    </HorizontalStackLayout>
+
+                    <!-- Losses -->
+                    <HorizontalStackLayout Spacing="15" HorizontalOptions="Center">
+                        <Label 
+                            Text="❌ LOSSES:"
+                            FontSize="20"
+                            TextColor="#ef4444"
+                            FontAttributes="Bold"
+                            WidthRequest="150"/>
+                        <Label 
+                            x:Name="LossesLabel"
+                            Text="0"
+                            FontSize="28"
+                            FontAttributes="Bold"
+                            TextColor="#ef4444"/>
+                    </HorizontalStackLayout>
+
+                    <!-- Divider -->
+                    <BoxView 
+                        HeightRequest="2"
+                        BackgroundColor="#475569"
+                        Margin="20,10,20,10"/>
+
+                    <!-- Total Games -->
+                    <HorizontalStackLayout Spacing="15" HorizontalOptions="Center">
+                        <Label 
+                            Text="🎮 TOTAL GAMES:"
+                            FontSize="18"
+                            TextColor="#94a3b8"
+                            FontAttributes="Bold"
+                            WidthRequest="180"/>
+                        <Label 
+                            x:Name="TotalGamesLabel"
+                            Text="0"
+                            FontSize="24"
+                            FontAttributes="Bold"
+                            TextColor="White"/>
+                    </HorizontalStackLayout>
+
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- WIN RATE -->
+            <Frame 
+                BackgroundColor="#1e293b"
+                BorderColor="#475569"
+                CornerRadius="15"
+                Padding="25">
+
+                <VerticalStackLayout Spacing="15">
+
+                    <Label 
+                        Text="📈 WIN RATE"
+                        FontSize="22"
+                        FontAttributes="Bold"
+                        TextColor="White"
+                        HorizontalOptions="Center"/>
+
+                    <Label 
+                        x:Name="WinRateLabel"
+                        Text="0.0%"
+                        FontSize="48"
+                        FontAttributes="Bold"
+                        TextColor="Gold"
+                        HorizontalOptions="Center"/>
+
+                    <!-- Progress Bar -->
+                    <ProgressBar 
+                        x:Name="WinRateProgress"
+                        Progress="0"
+                        ProgressColor="#22c55e"
+                        HeightRequest="15"
+                        Margin="20,10,20,0"/>
+
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- LAST PLAYED -->
+            <Frame 
+                BackgroundColor="#1e293b"
+                BorderColor="#475569"
+                CornerRadius="15"
+                Padding="20">
+
+                <VerticalStackLayout Spacing="10">
+
+                    <Label 
+                        Text="📅 LAST PLAYED"
+                        FontSize="18"
+                        FontAttributes="Bold"
+                        TextColor="White"
+                        HorizontalOptions="Center"/>
+
+                    <Label 
+                        x:Name="LastPlayedLabel"
+                        Text="Never"
+                        FontSize="16"
+                        TextColor="#94a3b8"
+                        HorizontalOptions="Center"/>
+
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- PERFORMANCE MESSAGE -->
+            <Frame 
+                x:Name="PerformanceFrame"
+                BackgroundColor="#1e293b"
+                BorderColor="Gold"
+                CornerRadius="15"
+                Padding="20"
+                IsVisible="False">
+
+                <VerticalStackLayout Spacing="10">
+
+                    <Label 
+                        x:Name="PerformanceTitle"
+                        Text="⭐ LEGENDARY PLAYER!"
+                        FontSize="20"
+                        FontAttributes="Bold"
+                        TextColor="Gold"
+                        HorizontalOptions="Center"/>
+
+                    <Label 
+                        x:Name="PerformanceMessage"
+                        Text="Keep up the excellent work!"
+                        FontSize="14"
+                        TextColor="#94a3b8"
+                        HorizontalOptions="Center"
+                        HorizontalTextAlignment="Center"/>
+
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- BUTTONS -->
+            <HorizontalStackLayout 
+                Spacing="15"
+                HorizontalOptions="Center"
+                Margin="0,20,0,0">
+
+                <Button 
+                    Text="🔄 REFRESH"
+                    FontSize="16"
+                    FontAttributes="Bold"
+                    BackgroundColor="#3b82f6"
+                    TextColor="White"
+                    HeightRequest="55"
+                    WidthRequest="150"
+                    CornerRadius="10"
+                    Clicked="OnRefreshClicked"/>
+
+                <Button 
+                    Text="← BACK"
+                    FontSize="16"
+                    FontAttributes="Bold"
+                    BackgroundColor="#475569"
+                    TextColor="White"
+                    HeightRequest="55"
+                    WidthRequest="150"
+                    CornerRadius="10"
+                    Clicked="OnBackClicked"/>
+
+            </HorizontalStackLayout>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

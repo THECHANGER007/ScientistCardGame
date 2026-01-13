@@ -3,6 +3,7 @@ using ScientistCardGame.Services;
 using System;
 using System.IO;
 using System.Linq;
+using Plugin.Maui.Audio;  // ← ADD THIS
 
 namespace ScientistCardGame.Views
 {
@@ -16,27 +17,22 @@ namespace ScientistCardGame.Views
         private Card _selectedCard;
         private Random _random = new Random();
         private StatsService _statsService;
-        private TurnTimerService _turnTimer; // ← ADD THIS
-        private bool _isMultiplayerMode = false; // ← ADD THIS
+        private TurnTimerService _turnTimer;
+        private bool _isMultiplayerMode = false;
         private bool _isInitialized = false;
+        private AudioService _audioService;  // ← ADD THIS
+
 
         public GamePage()
         {
             InitializeComponent();
-            
         }
 
         protected override async void OnAppearing()
         {
             base.OnAppearing();
-
-            // Show loading message
             MessageLabel.Text = "🎮 Initializing game...";
-
-            // Small delay to let UI show
             await Task.Delay(100);
-
-            // Now initialize
             InitializeGame();
         }
 
@@ -47,7 +43,6 @@ namespace ScientistCardGame.Views
                 MessageLabel.Text = "STEP 1: Starting...";
                 await Task.Delay(500);
 
-                // Stop old timer
                 if (_turnTimer != null)
                 {
                     _turnTimer.StopTimer();
@@ -74,16 +69,17 @@ namespace ScientistCardGame.Views
                 _turnTimer = new TurnTimerService(60);
                 _turnTimer.IsEnabled = false;
 
-                // DNA: CHECK AND IMPORT DATABASE!
+                // ← ADD AUDIO SERVICE HERE
+                MessageLabel.Text = "STEP 5.5: Creating audio service...";
+                await Task.Delay(500);
+
+                _audioService = new AudioService(AudioManager.Current);
+                await _audioService.PlayBackgroundMusicAsync("background_music.mp3");
+
                 MessageLabel.Text = "STEP 6: Checking database...";
                 await Task.Delay(500);
 
                 bool isEmpty = await _databaseService.IsDatabaseEmptyAsync();
-
-                // DNA: FORCE REIMPORT (UNCOMMENT THIS LINE TO FORCE UPDATE)
-                isEmpty = true; // ← REMOVE THIS LINE AFTER FIRST SUCCESSFUL RUN!
-
-                // DNA: FORCE REIMPORT
                 isEmpty = true;
 
                 if (isEmpty)
@@ -91,10 +87,8 @@ namespace ScientistCardGame.Views
                     MessageLabel.Text = "📥 Importing cards from Excel... Please wait!";
                     await Task.Delay(500);
 
-                    // Import from Excel file
                     var importer = new DataImporter(_databaseService);
 
-                    // DNA: Get file from app package
                     try
                     {
                         using var stream = await FileSystem.OpenAppPackageFileAsync("Data/Scientists_Cards_100_With_Effects_U.xlsx");
@@ -106,7 +100,6 @@ namespace ScientistCardGame.Views
                         }
 
                         await importer.ImportAllCardsAsync(tempPath, "Data/Special_Cards_20.xlsx");
-
                         File.Delete(tempPath);
                     }
                     catch (Exception ex)
@@ -173,57 +166,39 @@ namespace ScientistCardGame.Views
             var player = gameState.Player1;
             var opponent = gameState.Player2;
 
-            // Update Player Info
             PlayerNameLabel.Text = player.PlayerName;
             PlayerHPLabel.Text = player.HP.ToString();
             PlayerDeckCountLabel.Text = player.Deck.Count.ToString();
             PlayerGraveyardCountLabel.Text = player.Graveyard.Count.ToString();
             PlayerHandCountLabel.Text = $"Hand: {player.Hand.Count} | Summons: {player.SummonsThisTurn}/{player.MaxSummonsPerTurn}";
 
-            // Update Opponent Info
             OpponentNameLabel.Text = opponent.PlayerName;
             OpponentHPLabel.Text = opponent.HP.ToString();
             OpponentDeckCountLabel.Text = opponent.Deck.Count.ToString();
             OpponentGraveyardCountLabel.Text = opponent.Graveyard.Count.ToString();
             OpponentHandCountLabel.Text = $"Hand: {opponent.Hand.Count}";
 
-            // DNA: Update Turn Info with mode-specific text
             string turnText = $"Turn {gameState.CurrentTurn} - {gameState.CurrentPlayer.PlayerName}'s Turn";
             if (_isMultiplayerMode && gameState.CurrentPlayer.PlayerId == 2)
             {
-                turnText += " 📱"; // Indicator for Player 2
+                turnText += " 📱";
             }
             TurnInfoLabel.Text = turnText;
             PhaseLabel.Text = $"📍 {gameState.CurrentPhase} Phase";
-            // DNA: Timer disabled for now
-            // if (_turnTimer != null && _turnTimer.IsEnabled && gameState.CurrentPlayer.PlayerId == 1)
-            // {
-            //     TimerLabel.IsVisible = true;
-            //     TimerLabel.Text = $"⏱️ {_turnTimer.GetTimeString()}";
-            // }
-            // else
-            // {
             TimerLabel.IsVisible = false;
-            // }
-            // DNA: Show active field bonuses
+
             var activeBonuses = GetActiveFieldBonuses(gameState.CurrentPlayer);
             if (!string.IsNullOrEmpty(activeBonuses))
             {
                 MessageLabel.Text = activeBonuses;
             }
 
-            // Update Hand
             UpdateHandDisplay(player);
-
-            // Update Fields
             UpdateFieldDisplay(PlayerFieldContainer, player);
             UpdateFieldDisplay(OpponentFieldContainer, opponent);
-            // Update Trap Zones
             UpdateTrapZoneDisplay(PlayerTrapZoneContainer, player);
             UpdateTrapZoneDisplay(OpponentTrapZoneContainer, opponent);
 
-          
-            // Check game over
             if (gameState.IsGameOver)
             {
                 ShowGameOver(gameState.Winner);
@@ -241,10 +216,8 @@ namespace ScientistCardGame.Views
             }
         }
 
-        // DNA: Create visual card for hand display
         private Frame CreateHandCardView(Card card)
         {
-            // DNA: Color-coded borders by FIELD and TYPE
             Color borderColor = Colors.Gray;
             Color backgroundColor = Color.FromArgb("#2C3E50");
 
@@ -252,21 +225,21 @@ namespace ScientistCardGame.Views
             {
                 borderColor = card.Field switch
                 {
-                    "SCIENCE" => Color.FromArgb("#3498DB"),      // Blue
-                    "PHILOSOPHY" => Color.FromArgb("#9B59B6"),   // Purple
-                    "SPIRITUALITY" => Color.FromArgb("#F39C12"), // Gold
-                    "HUMANITIES" => Color.FromArgb("#27AE60"),   // Green
+                    "SCIENCE" => Color.FromArgb("#3498DB"),
+                    "PHILOSOPHY" => Color.FromArgb("#9B59B6"),
+                    "SPIRITUALITY" => Color.FromArgb("#F39C12"),
+                    "HUMANITIES" => Color.FromArgb("#27AE60"),
                     _ => Colors.Gray
                 };
             }
             else if (card.CardType == "DISCOVERY")
             {
-                borderColor = Color.FromArgb("#2ECC71");  // Bright Green
+                borderColor = Color.FromArgb("#2ECC71");
                 backgroundColor = Color.FromArgb("#1E8449");
             }
             else if (card.CardType == "PARADOX")
             {
-                borderColor = Color.FromArgb("#E91E63");  // Pink
+                borderColor = Color.FromArgb("#E91E63");
                 backgroundColor = Color.FromArgb("#880E4F");
             }
 
@@ -287,7 +260,6 @@ namespace ScientistCardGame.Views
                 Spacing = 4
             };
 
-            // DNA: Card Name with Tier Badge
             string tierBadge = card.Tier switch
             {
                 "LEGENDARY" => "★",
@@ -315,7 +287,6 @@ namespace ScientistCardGame.Views
             };
             stackLayout.Add(nameLabel);
 
-            // DNA: Tier/Type indicator
             string typeText = card.CardType == "CHARACTER"
                 ? $"{card.Tier}"
                 : $"{card.CardType}";
@@ -329,7 +300,6 @@ namespace ScientistCardGame.Views
             };
             stackLayout.Add(tierLabel);
 
-            // DNA: Stats for CHARACTER cards
             if (card.CardType == "CHARACTER")
             {
                 var statsLabel = new Label
@@ -343,7 +313,6 @@ namespace ScientistCardGame.Views
                 };
                 stackLayout.Add(statsLabel);
 
-                // Field and School
                 var fieldLabel = new Label
                 {
                     Text = $"🌐 {card.Field}",
@@ -363,7 +332,6 @@ namespace ScientistCardGame.Views
                 stackLayout.Add(schoolLabel);
             }
 
-            // DNA: Buttons
             var buttonStack = new HorizontalStackLayout
             {
                 Spacing = 5,
@@ -407,7 +375,6 @@ namespace ScientistCardGame.Views
         {
             container.Clear();
 
-            // Get only CHARACTER cards for monster zone
             var characterCards = player.Field.Where(c => c.CardType == "CHARACTER").ToList();
 
             if (characterCards.Count == 0)
@@ -425,19 +392,16 @@ namespace ScientistCardGame.Views
             {
                 foreach (var card in characterCards)
                 {
-                    var cardView = CreateFieldCardView(card); // FIXED: Removed second parameter
+                    var cardView = CreateFieldCardView(card);
                     container.Add(cardView);
                 }
             }
         }
 
-        // DNA: Update trap zone display
-        // DNA: Update trap zone display
         private void UpdateTrapZoneDisplay(VerticalStackLayout container, Player player)
         {
             container.Clear();
 
-            // Get PARADOX cards (traps)
             var trapCards = player.Field.Where(c => c.CardType == "PARADOX").ToList();
 
             if (trapCards.Count == 0)
@@ -453,17 +417,16 @@ namespace ScientistCardGame.Views
             }
             else
             {
-                // DNA: Determine if these are player's cards or opponent's
                 bool isPlayerCard = (player.PlayerId == 1);
 
                 foreach (var trap in trapCards)
                 {
-                    var trapView = CreateTrapCardView(trap, isPlayerCard); // FIXED: Changed 'card' to 'trap'
+                    var trapView = CreateTrapCardView(trap, isPlayerCard);
                     container.Add(trapView);
                 }
             }
         }
-        // DNA: Show full card details
+
         private async void OnCardDetailsClicked(Card card)
         {
             string details = $"📜 {card.Name}\n\n";
@@ -484,9 +447,7 @@ namespace ScientistCardGame.Views
 
             await DisplayAlert($"📋 {card.Name}", details, "Close");
         }
-        // DNA: Create face-down trap card view
-        // DNA: Create face-down trap card view
-        // DNA: Create visual card for trap zone display
+
         private Frame CreateTrapCardView(Card card, bool isPlayerCard)
         {
             var frame = new Frame
@@ -507,7 +468,6 @@ namespace ScientistCardGame.Views
 
             if (isPlayerCard && card.IsFaceDown)
             {
-                // Player's trap - show name and buttons
                 var nameLabel = new Label
                 {
                     Text = $"🔮 {card.Name}",
@@ -555,7 +515,6 @@ namespace ScientistCardGame.Views
             }
             else
             {
-                // Opponent's trap - face down
                 var faceDownLabel = new Label
                 {
                     Text = "🎴\nTRAP",
@@ -573,7 +532,7 @@ namespace ScientistCardGame.Views
             frame.Content = stackLayout;
             return frame;
         }
-        // DNA: Activate trap card
+
         private async void OnActivateTrapClicked(Card trap)
         {
             var gameState = _gameEngine.GetGameState();
@@ -588,10 +547,11 @@ namespace ScientistCardGame.Views
             if (!confirm)
                 return;
 
-            // Execute trap effect
+            // ← ADD SOUND HERE
+            await _audioService.PlaySoundEffectAsync("trap_set");
+
             var result = _effectsEngine.ExecuteCardEffect(trap, gameState.Player1, gameState.Player2);
 
-            // Remove from field and send to graveyard
             gameState.Player1.Field.Remove(trap);
             gameState.Player1.SendToGraveyard(trap);
 
@@ -599,10 +559,8 @@ namespace ScientistCardGame.Views
             UpdateGameUI();
         }
 
-        // DNA: Create visual card for field display (with position, stats, buttons)
         private Frame CreateFieldCardView(Card card)
         {
-            // DNA: Color-coded borders
             Color borderColor = card.Field switch
             {
                 "SCIENCE" => Color.FromArgb("#3498DB"),
@@ -628,7 +586,6 @@ namespace ScientistCardGame.Views
                 Spacing = 3
             };
 
-            // DNA: Card Name with Tier Badge
             string tierBadge = card.Tier switch
             {
                 "LEGENDARY" => "★★★",
@@ -649,7 +606,6 @@ namespace ScientistCardGame.Views
             };
             stackLayout.Add(nameLabel);
 
-            // DNA: Battle Position with Icon
             string positionIcon = card.BattlePosition == "ATTACK" ? "⚔️" : "🛡️";
             string positionText = card.BattlePosition == "ATTACK" ? "ATTACK" : "DEFENSE";
             Color positionColor = card.BattlePosition == "ATTACK"
@@ -668,12 +624,10 @@ namespace ScientistCardGame.Views
             };
             stackLayout.Add(positionLabel);
 
-            // DNA: Current Stats (with bonuses highlighted)
             string statText = card.BattlePosition == "ATTACK"
                 ? $"⚔️ ATK: {card.CurrentATK}"
                 : $"🛡️ DEF: {card.CurrentDEF}";
 
-            // Show bonus if stats changed
             bool hasBonus = (card.BattlePosition == "ATTACK" && card.CurrentATK != card.ATK) ||
                            (card.BattlePosition == "DEFENSE" && card.CurrentDEF != card.DEF);
 
@@ -695,7 +649,6 @@ namespace ScientistCardGame.Views
             };
             stackLayout.Add(statsLabel);
 
-            // DNA: Base Stats (smaller)
             var baseStatsLabel = new Label
             {
                 Text = $"Base: {card.ATK}/{card.DEF}",
@@ -705,7 +658,6 @@ namespace ScientistCardGame.Views
             };
             stackLayout.Add(baseStatsLabel);
 
-            // DNA: Field/School badges
             var fieldSchoolStack = new HorizontalStackLayout
             {
                 Spacing = 5,
@@ -733,7 +685,6 @@ namespace ScientistCardGame.Views
 
             stackLayout.Add(fieldSchoolStack);
 
-            // DNA: Buttons
             var buttonStack = new HorizontalStackLayout
             {
                 Spacing = 5,
@@ -741,7 +692,6 @@ namespace ScientistCardGame.Views
                 Margin = new Thickness(0, 5, 0, 0)
             };
 
-            // Attack button
             var attackButton = new Button
             {
                 Text = "⚔️",
@@ -754,7 +704,6 @@ namespace ScientistCardGame.Views
             attackButton.Clicked += (s, e) => OnAttackClicked(card);
             buttonStack.Add(attackButton);
 
-            // Switch position button
             var switchButton = new Button
             {
                 Text = "🔄",
@@ -767,7 +716,6 @@ namespace ScientistCardGame.Views
             switchButton.Clicked += (s, e) => OnSwitchPositionClicked(card);
             buttonStack.Add(switchButton);
 
-            // Effect button (only for MANUAL trigger cards)
             if (card.EffectTrigger == "MANUAL")
             {
                 var effectButton = new Button
@@ -789,8 +737,6 @@ namespace ScientistCardGame.Views
             return frame;
         }
 
-        // ========== GAME ACTIONS ==========
-
         private async void OnPlayCardClicked(Card card)
         {
             var gameState = _gameEngine.GetGameState();
@@ -805,7 +751,6 @@ namespace ScientistCardGame.Views
 
             if (card.CardType == "CHARACTER")
             {
-                // DNA: Check summoning system
                 var summonResult = await CheckSummonRequirements(card, gameState.CurrentPlayer);
 
                 if (!summonResult.canSummon)
@@ -814,12 +759,13 @@ namespace ScientistCardGame.Views
                     return;
                 }
 
-                // DNA: Apply summoning cost
                 success = await ExecuteSummon(card, gameState.CurrentPlayer, summonResult);
 
                 if (success)
                 {
-                    // DNA: Ask for battle position
+                    // ← ADD SOUND HERE
+                    await _audioService.PlaySoundEffectAsync("summon");
+
                     bool attackMode = await DisplayAlert(
                         "⚔️ Choose Battle Position",
                         $"Summon {card.Name} in which position?\n\n⚔️ ATTACK: Can attack, uses ATK when defending\n🛡️ DEFENSE: Cannot attack, uses DEF when defending",
@@ -834,12 +780,14 @@ namespace ScientistCardGame.Views
 
                     gameState.CurrentPlayer.SummonsThisTurn++;
                     ShowMessage($"✅ {positionIcon} Summoned {card.Name} in {positionText} mode! ({gameState.CurrentPlayer.SummonsThisTurn}/{gameState.CurrentPlayer.MaxSummonsPerTurn})");
-                    // DNA: Apply graveyard effects to newly summoned card
                     _gameEngine.ApplyGraveyardEffects(gameState.CurrentPlayer);
                 }
             }
             else if (card.CardType == "DISCOVERY")
             {
+                // ← ADD SOUND HERE
+                await _audioService.PlaySoundEffectAsync("discovery");
+
                 var result = _effectsEngine.ExecuteCardEffect(card, gameState.CurrentPlayer, gameState.OpponentPlayer);
                 gameState.CurrentPlayer.Hand.Remove(card);
                 gameState.CurrentPlayer.SendToGraveyard(card);
@@ -848,6 +796,9 @@ namespace ScientistCardGame.Views
             }
             else if (card.CardType == "PARADOX")
             {
+                // ← ADD SOUND HERE
+                await _audioService.PlaySoundEffectAsync("trap_set");
+
                 success = _gameEngine.SetParadoxCard(card, gameState.CurrentPlayer);
                 if (success)
                     ShowMessage($"🔮 Set {card.Name} face-down!");
@@ -864,7 +815,6 @@ namespace ScientistCardGame.Views
             var gameState = _gameEngine.GetGameState();
             var opponent = gameState.OpponentPlayer;
 
-            // DNA: Can only attack once per turn
             if (attackingCard.HasAttackedThisTurn)
             {
                 await DisplayAlert("⚠️ Already Attacked",
@@ -872,7 +822,6 @@ namespace ScientistCardGame.Views
                 return;
             }
 
-            // DNA: Cannot attack on Turn 1
             if (gameState.CurrentTurn == 1)
             {
                 await DisplayAlert("⚠️ Cannot Attack",
@@ -884,7 +833,6 @@ namespace ScientistCardGame.Views
 
             if (opponentCharacters.Count == 0)
             {
-                // Direct attack (no targets)
                 bool confirmDirect = await DisplayAlert(
                     "⚔️ Direct Attack!",
                     $"{attackingCard.Name} will attack directly for {attackingCard.CurrentATK} damage!",
@@ -894,9 +842,12 @@ namespace ScientistCardGame.Views
 
                 if (!confirmDirect)
                     return;
-                // DNA: Show attack animation
+
+                // ← ADD SOUND HERE
+                await _audioService.PlaySoundEffectAsync("attack");
+
                 await ShowAttackIndicator(attackingCard, null);
-                // DNA: Show bonus calculation
+
                 int baseATK = attackingCard.CurrentATK;
                 int finalATK = _gameEngine.CalculateFinalATK(attackingCard, null, gameState.CurrentPlayer);
                 int atkBonus = finalATK - baseATK;
@@ -908,20 +859,19 @@ namespace ScientistCardGame.Views
                 ShowMessage($"⚔️ {attackingCard.Name}: {baseATK} ATK{bonusInfo} = {finalATK} direct damage!");
                 await Task.Delay(1000);
 
-               
-
                 var result = _gameEngine.ExecuteDirectAttack(attackingCard, gameState.CurrentPlayer, opponent);
                 ShowMessage($"🔥 {result.Message}");
             }
             else
             {
-                // DNA: TARGET SELECTION!
                 Card targetCard = await SelectAttackTarget(opponentCharacters, attackingCard);
 
                 if (targetCard == null)
-                    return; // Cancelled
+                    return;
 
-                // DNA: Calculate and show bonuses BEFORE battle
+                // ← ADD SOUND HERE
+                await _audioService.PlaySoundEffectAsync("attack");
+
                 int baseATK = attackingCard.CurrentATK;
                 int finalATK = _gameEngine.CalculateFinalATK(attackingCard, targetCard, gameState.CurrentPlayer);
                 int atkBonus = finalATK - baseATK;
@@ -935,35 +885,36 @@ namespace ScientistCardGame.Views
                 ShowMessage($"⚔️ {attackingCard.Name}: {baseATK} ATK{bonusInfo} = {finalATK} total!");
                 await Task.Delay(1000);
 
-                // DNA: Show attack animation
                 await ShowAttackIndicator(attackingCard, targetCard);
 
-                // Execute battle with selected target
                 var result = _gameEngine.ExecuteBattle(attackingCard, targetCard,
                     gameState.CurrentPlayer, opponent);
+
+                // ← ADD DESTROY SOUND IF CARD DESTROYED
+                if (result.DestroyedCard != null)
+                {
+                    await _audioService.PlaySoundEffectAsync("destroy");
+                }
+
                 ShowMessage($"⚔️ {result.Message}");
             }
 
-            // Mark card as having attacked
             attackingCard.HasAttackedThisTurn = true;
 
             gameState.CheckVictoryCondition();
             UpdateGameUI();
         }
-        // DNA: Let player select which card to attack
-        // DNA: Let player select which card to attack
+
         private async Task<Card> SelectAttackTarget(List<Card> targets, Card attacker)
         {
             if (targets.Count == 0)
                 return null;
 
-            // DNA: Check Mandela protection ONCE at the start
             var gameState = _gameEngine.GetGameState();
             var validTargets = targets.ToList();
 
             if (gameState.OpponentPlayer.Graveyard.Any(c => c.Name == "Nelson Mandela"))
             {
-                // Remove HUMANISM cards from target list
                 validTargets = validTargets.Where(t => t.School != "HUMANISM").ToList();
 
                 if (validTargets.Count == 0)
@@ -977,7 +928,6 @@ namespace ScientistCardGame.Views
 
             if (validTargets.Count == 1)
             {
-                // Only one valid target - confirm
                 var target = validTargets[0];
                 bool confirm = await DisplayAlert(
                     "⚔️ Confirm Attack",
@@ -989,7 +939,6 @@ namespace ScientistCardGame.Views
                 return confirm ? target : null;
             }
 
-            // Multiple valid targets - show selection
             var targetOptions = validTargets.Select(t =>
                 $"{t.Name} ({t.BattlePosition}) - " +
                 (t.BattlePosition == "ATTACK" ? $"{t.CurrentATK} ATK" : $"{t.CurrentDEF} DEF")
@@ -1005,13 +954,11 @@ namespace ScientistCardGame.Views
             if (choice == "❌ Cancel" || choice == null)
                 return null;
 
-            // Find selected target
             int selectedIndex = Array.IndexOf(targetOptions, choice);
             if (selectedIndex >= 0 && selectedIndex < validTargets.Count)
             {
                 var target = validTargets[selectedIndex];
 
-                // Confirm
                 bool confirm = await DisplayAlert(
                     "⚔️ Confirm Attack",
                     $"{attacker.Name} ({attacker.CurrentATK} ATK)\n    VS\n{target.Name} ({(target.BattlePosition == "ATTACK" ? target.CurrentATK + " ATK" : target.CurrentDEF + " DEF")})",
@@ -1025,8 +972,6 @@ namespace ScientistCardGame.Views
             return null;
         }
 
-
-        // DNA: Let player select which trap to activate
         private async Task<Card> SelectTrapToActivate(List<Card> traps)
         {
             if (traps.Count == 0)
@@ -1034,7 +979,6 @@ namespace ScientistCardGame.Views
 
             if (traps.Count == 1)
             {
-                // Only one trap - ask if they want to activate it
                 bool activate = await DisplayAlert(
                     "🔮 Activate Trap?",
                     $"{traps[0].Name}\n\n✨ {traps[0].SpecialEffect}",
@@ -1045,7 +989,6 @@ namespace ScientistCardGame.Views
                 return activate ? traps[0] : null;
             }
 
-            // Multiple traps - let player choose
             string[] trapNames = traps.Select(t => $"{t.Name}").ToArray();
 
             string choice = await DisplayActionSheet(
@@ -1058,12 +1001,10 @@ namespace ScientistCardGame.Views
             if (choice == "❌ Cancel" || choice == null)
                 return null;
 
-            // Find selected trap
             var selectedTrap = traps.FirstOrDefault(t => t.Name == choice);
 
             if (selectedTrap != null)
             {
-                // Confirm activation
                 bool confirm = await DisplayAlert(
                     "🔮 Confirm Activation",
                     $"{selectedTrap.Name}\n\n✨ {selectedTrap.SpecialEffect}",
@@ -1081,7 +1022,6 @@ namespace ScientistCardGame.Views
         {
             var gameState = _gameEngine.GetGameState();
 
-            // DNA: Check if effect already used
             if (card.EffectFrequency == "ONCE_PER_TURN" && card.EffectUsedThisTurn)
             {
                 await DisplayAlert("⚠️ Effect Already Used",
@@ -1096,10 +1036,8 @@ namespace ScientistCardGame.Views
                 return;
             }
 
-            // Execute effect
             var result = _effectsEngine.ExecuteCardEffect(card, gameState.CurrentPlayer, gameState.OpponentPlayer);
 
-            // Mark as used
             card.EffectUsedThisTurn = true;
             card.TimesEffectUsed++;
 
@@ -1119,15 +1057,20 @@ namespace ScientistCardGame.Views
 
             if (gameState.CurrentPhase == "DRAW")
             {
+                // ← ADD SOUND HERE
+                await _audioService.PlaySoundEffectAsync("phase_change");
+
                 ShowPhaseAnnouncement("DRAW PHASE", "Draw your card!");
                 await Task.Delay(1500);
 
                 var drawn = _gameEngine.ExecuteTurn();
                 if (drawn.DrawnCard != null)
                 {
+                    // ← ADD SOUND HERE
+                    await _audioService.PlaySoundEffectAsync("draw");
+
                     ShowMessage($"📥 Drew: {drawn.DrawnCard.Name}");
 
-                    // DNA: Check Prisoner's Dilemma effect
                     if (gameState.CurrentPlayer.SpecialEffect.Contains("[PRISONER_DILEMMA]"))
                     {
                         if (gameState.CurrentPlayer.Hand.Count > 0)
@@ -1146,6 +1089,9 @@ namespace ScientistCardGame.Views
             }
             else if (gameState.CurrentPhase == "MAIN")
             {
+                // ← ADD SOUND HERE
+                await _audioService.PlaySoundEffectAsync("phase_change");
+
                 ShowPhaseAnnouncement("MAIN PHASE", "Summon monsters and set traps!");
                 await Task.Delay(1500);
 
@@ -1154,6 +1100,9 @@ namespace ScientistCardGame.Views
             }
             else if (gameState.CurrentPhase == "BATTLE")
             {
+                // ← ADD SOUND HERE
+                await _audioService.PlaySoundEffectAsync("phase_change");
+
                 ShowPhaseAnnouncement("BATTLE PHASE", "Declare your attacks!");
                 await Task.Delay(1500);
 
@@ -1168,7 +1117,6 @@ namespace ScientistCardGame.Views
 
         private async void OnEndTurnClicked(object sender, EventArgs e)
         {
-            // DNA: Stop timer when turn ends
             if (_turnTimer != null)
             {
                 _turnTimer.StopTimer();
@@ -1179,46 +1127,38 @@ namespace ScientistCardGame.Views
 
             var gameState = _gameEngine.GetGameState();
 
-            // Check if it's AI's turn
             if (gameState.CurrentPlayer.PlayerId == 2)
             {
-                // DNA: Check if AI turn should be skipped (Time Dilation)
                 if (gameState.CurrentPlayer.SpecialEffect.Contains("[SKIP_NEXT_TURN]"))
                 {
                     ShowMessage("⏱️ Time Dilation: AI's turn is SKIPPED!");
                     await Task.Delay(2000);
 
-                    // Remove skip flag
                     gameState.CurrentPlayer.SpecialEffect =
                         gameState.CurrentPlayer.SpecialEffect.Replace(" [SKIP_NEXT_TURN]", "");
 
-                    // End AI turn immediately
                     _gameEngine.EndTurn();
                     UpdateGameUI();
 
-                    // DNA: Player's turn starts
                     ShowPhaseAnnouncement("YOUR TURN", "Get ready to draw!");
                     await Task.Delay(1500);
 
-                    gameState.NextPhase(); // Move to DRAW phase
+                    gameState.NextPhase();
                     UpdateGameUI();
                     ShowPhaseAnnouncement("DRAW PHASE", "Draw your card!");
 
                     return;
                 }
 
-                // Disable buttons during AI turn
                 NextPhaseButton.IsEnabled = false;
                 EndTurnButton.IsEnabled = false;
 
-                // DNA: AI TURN ANNOUNCEMENT
                 ShowPhaseAnnouncement("OPPONENT'S TURN", "AI is thinking...");
                 await Task.Delay(1500);
 
                 ShowMessage("🤖 AI Opponent is thinking...");
                 await Task.Delay(1000);
 
-                // DRAW PHASE
                 ShowPhaseAnnouncement("AI DRAW PHASE", "Opponent is drawing...");
                 await Task.Delay(1500);
 
@@ -1234,7 +1174,6 @@ namespace ScientistCardGame.Views
                     await Task.Delay(1000);
                 }
 
-                // MAIN PHASE
                 ShowPhaseAnnouncement("AI MAIN PHASE", "Opponent is playing cards...");
                 await Task.Delay(1500);
 
@@ -1247,7 +1186,6 @@ namespace ScientistCardGame.Views
                 ShowMessage(playLog);
                 await Task.Delay(1500);
 
-                // BATTLE PHASE
                 ShowPhaseAnnouncement("AI BATTLE PHASE", "Opponent is attacking!");
                 await Task.Delay(1500);
 
@@ -1260,17 +1198,14 @@ namespace ScientistCardGame.Views
                 ShowMessage(battleLog);
                 await Task.Delay(1500);
 
-                // END PHASE
                 gameState.NextPhase();
                 _gameEngine.EndTurn();
                 UpdateGameUI();
                 ShowMessage("🤖 AI ended turn. Your turn begins!");
 
-                // Re-enable buttons
                 NextPhaseButton.IsEnabled = true;
                 EndTurnButton.IsEnabled = true;
 
-                // DNA: AUTO-ADVANCE TO PLAYER'S DRAW PHASE
                 await Task.Delay(1000);
 
                 ShowPhaseAnnouncement("YOUR TURN", "Get ready to draw!");
@@ -1279,12 +1214,11 @@ namespace ScientistCardGame.Views
                 ShowMessage("🎮 Your turn! Draw Phase starting...");
                 await Task.Delay(500);
 
-                gameState.NextPhase(); // Move to DRAW phase automatically
+                gameState.NextPhase();
                 UpdateGameUI();
 
                 ShowPhaseAnnouncement("DRAW PHASE", "Draw your card!");
 
-                // DNA: Start timer for player's turn
                 if (_turnTimer != null && _turnTimer.IsEnabled)
                 {
                     _turnTimer.StartTimer();
@@ -1296,10 +1230,9 @@ namespace ScientistCardGame.Views
             }
         }
 
-        // DNA: Timer settings
         private async void OnTimerSettingsClicked(object sender, EventArgs e)
         {
-            if (_turnTimer == null) // ← FIX: Null check at start
+            if (_turnTimer == null)
             {
                 await DisplayAlert("⏱️ Timer Not Available", "Timer is currently disabled", "OK");
                 return;
@@ -1364,33 +1297,21 @@ namespace ScientistCardGame.Views
             UpdateGameUI();
         }
 
-        // AI helper methods
         private async Task<string> AIPlayCards()
         {
             var gameState = _gameEngine.GetGameState();
             var ai = gameState.Player2;
             string log = "";
 
-            // DNA: Prioritize cards that create field synergy
             var charactersInHand = ai.Hand.Where(c => c.CardType == "CHARACTER").ToList();
 
-            // Sort by synergy potential
             charactersInHand = charactersInHand.OrderByDescending(c =>
             {
                 int synergy = 0;
-
-                // +10 points if this card matches existing field
                 synergy += ai.Field.Count(f => f.Field == c.Field) * 10;
-
-                // +5 points for each matching school
                 synergy += ai.Field.Count(f => f.School == c.School) * 5;
-
-                // +20 points for LEGENDARY
                 if (c.Tier == "LEGENDARY") synergy += 20;
-
-                // +10 points for high ATK
                 if (c.ATK >= 2500) synergy += 10;
-
                 return synergy;
             }).Take(3).ToList();
 
@@ -1401,8 +1322,6 @@ namespace ScientistCardGame.Views
                 if (_gameEngine.PlayCharacterCard(card, ai))
                 {
                     ai.SummonsThisTurn++;
-
-                    // DNA: Smart position choice
                     card.BattlePosition = ChooseSmartPosition(card);
                     string posIcon = card.BattlePosition == "ATTACK" ? "⚔️" : "🛡️";
 
@@ -1412,14 +1331,13 @@ namespace ScientistCardGame.Views
                 }
             }
 
-            // DNA: AI uses card effects strategically
             var effectCards = ai.Field.Where(c =>
                 c.CardType == "CHARACTER" &&
                 c.EffectTrigger == "MANUAL" &&
                 !c.EffectUsedThisTurn
             ).ToList();
 
-            if (effectCards.Any() && _random.Next(100) < 40) // 40% chance to use effect
+            if (effectCards.Any() && _random.Next(100) < 40)
             {
                 var effectCard = effectCards[_random.Next(effectCards.Count)];
                 var result = _effectsEngine.ExecuteCardEffect(effectCard, ai, gameState.Player1);
@@ -1432,11 +1350,10 @@ namespace ScientistCardGame.Views
                 await Task.Delay(700);
             }
 
-            // DNA: Smart trap setting (Step 17D)
             var paradoxCards = ai.Hand.Where(c => c.CardType == "PARADOX").ToList();
             int aiAttackers = ai.Field.Count(c => c.CardType == "CHARACTER");
 
-            if (paradoxCards.Any() && aiAttackers >= 2 && _random.Next(100) < 60) // 60% chance if we have 2+ attackers
+            if (paradoxCards.Any() && aiAttackers >= 2 && _random.Next(100) < 60)
             {
                 var paradox = paradoxCards.First();
                 if (_gameEngine.SetParadoxCard(paradox, ai))
@@ -1460,7 +1377,6 @@ namespace ScientistCardGame.Views
             var player = gameState.Player1;
             string log = "";
 
-            // DNA: Cannot attack on turn 1
             if (gameState.CurrentTurn == 1)
             {
                 return "AI cannot attack on first turn\n";
@@ -1473,9 +1389,7 @@ namespace ScientistCardGame.Views
 
             foreach (var attacker in aiAttackers)
             {
-                // DNA: Get player defenders FIRST (needed for trap redirect logic)
                 var playerDefenders = player.Field.Where(c => c.CardType == "CHARACTER").ToList();
-                // DNA: CHECK PLAYER TRAPS BEFORE AI ATTACKS!
                 var playerTraps = player.Field.Where(c => c.CardType == "PARADOX").ToList();
 
                 if (playerTraps.Count > 0)
@@ -1497,6 +1411,9 @@ namespace ScientistCardGame.Views
 
                         if (selectedTrap != null)
                         {
+                            // ← ADD SOUND HERE
+                            await _audioService.PlaySoundEffectAsync("trap_set");
+
                             var trapResult = _effectsEngine.ExecuteCardEffect(selectedTrap, player, ai);
 
                             player.Field.Remove(selectedTrap);
@@ -1509,30 +1426,30 @@ namespace ScientistCardGame.Views
                             UpdateGameUI();
                             await Task.Delay(1500);
 
-                            // DNA FIX: Check ALL trap effect flags
-
-                            // 1. NEGATED ATTACK (Schrödinger's Cat)
                             if (trapResult.NegatedAttack)
                             {
                                 log += $"🛡️ {attacker.Name}'s attack was NEGATED!\n";
                                 ShowMessage(log);
                                 await Task.Delay(1000);
                                 attacker.HasAttackedThisTurn = true;
-                                continue; // Skip this attack
+                                continue;
                             }
 
-                            // 2. REDIRECT TARGET (Heisenberg's Uncertainty)
                             if (trapResult.RedirectTarget && playerDefenders.Count > 1)
                             {
-                                // Redirect to random card
                                 var newTarget = playerDefenders[_random.Next(playerDefenders.Count)];
                                 log += $"🎯 Attack redirected to {newTarget.Name}!\n";
                                 ShowMessage(log);
                                 await Task.Delay(1000);
 
-                                // Execute battle with new target
                                 var redirectResult = _gameEngine.ExecuteBattle(attacker, newTarget, ai, player);
                                 log += $"⚔️ {redirectResult.Message}\n";
+
+                                if (redirectResult.DestroyedCard != null)
+                                {
+                                    await _audioService.PlaySoundEffectAsync("destroy");
+                                }
+
                                 ShowMessage(log);
                                 UpdateGameUI();
                                 await Task.Delay(1000);
@@ -1540,31 +1457,29 @@ namespace ScientistCardGame.Views
                                 gameState.CheckVictoryCondition();
                                 if (gameState.IsGameOver) break;
 
-                                continue; // Skip normal attack flow
+                                continue;
                             }
 
-                            // 3. SKIP NEXT TURN (Time Dilation)
                             if (trapResult.SkipNextTurn)
                             {
                                 gameState.CurrentPlayer.SpecialEffect += " [SKIP_NEXT_TURN]";
                                 log += $"⏱️ AI's next turn will be SKIPPED!\n";
                                 ShowMessage(log);
                                 await Task.Delay(1000);
-                                // Attack still continues
                             }
                         }
                     }
                 }
 
-              
-                
                 if (playerDefenders.Count == 0)
                 {
-                    // Direct attack
+                    // ← ADD SOUND HERE
+                    await _audioService.PlaySoundEffectAsync("attack");
+
                     ShowMessage($"🎯 AI's {attacker.Name} targets YOU directly!");
                     UpdateGameUI();
                     await Task.Delay(1200);
-                    // DNA: Show attack animation
+
                     await ShowAttackIndicator(attacker, null);
 
                     var result = _gameEngine.ExecuteDirectAttack(attacker, ai, player);
@@ -1572,11 +1487,11 @@ namespace ScientistCardGame.Views
                 }
                 else
                 {
-                  
-                    // DNA: Smart target selection
+                    // ← ADD SOUND HERE
+                    await _audioService.PlaySoundEffectAsync("attack");
+
                     var target = ChooseSmartTarget(playerDefenders, attacker);
 
-                    // DNA: Calculate bonuses
                     int baseATK = attacker.CurrentATK;
                     int finalATK = _gameEngine.CalculateFinalATK(attacker, target, ai);
                     int atkBonus = finalATK - baseATK;
@@ -1587,10 +1502,17 @@ namespace ScientistCardGame.Views
                     ShowMessage($"🎯 AI's {attacker.Name} ({baseATK}{bonusInfo} = {finalATK} ATK) targeting {target.Name} ({targetPos})!");
                     UpdateGameUI();
                     await Task.Delay(1500);
-                    // DNA: Show attack animation
+
                     await ShowAttackIndicator(attacker, target);
 
                     var result = _gameEngine.ExecuteBattle(attacker, target, ai, player);
+
+                    // ← ADD DESTROY SOUND IF CARD DESTROYED
+                    if (result.DestroyedCard != null)
+                    {
+                        await _audioService.PlaySoundEffectAsync("destroy");
+                    }
+
                     log += $"⚔️ {result.Message}\n";
                 }
 
@@ -1604,13 +1526,10 @@ namespace ScientistCardGame.Views
             return log;
         }
 
-        // ========== HELPERS ==========
-
         private void ShowMessage(string message)
         {
             MessageLabel.Text = message;
 
-            // Auto-clear old messages after delay
             Device.StartTimer(TimeSpan.FromSeconds(5), () =>
             {
                 if (MessageLabel.Text == message)
@@ -1623,16 +1542,20 @@ namespace ScientistCardGame.Views
         {
             bool playerWon = winner.PlayerId == 1;
 
-            // Record win/loss
+            // ← ADD SOUND HERE
+            if (playerWon)
+                await _audioService.PlaySoundEffectAsync("victory");
+            else
+                await _audioService.PlaySoundEffectAsync("defeat");
+
             string statsText = "";
-            if (_statsService != null) // ← FIX: Null check
+            if (_statsService != null)
             {
                 if (playerWon)
                     await _statsService.RecordWin();
                 else
                     await _statsService.RecordLoss();
 
-                // Get updated stats
                 var stats = _statsService.GetStats();
                 string winRate = _statsService.GetWinRate().ToString("F1");
                 statsText = $"\n\n📊 YOUR STATS:\nWins: {stats.TotalWins} | Losses: {stats.TotalLosses}\nWin Rate: {winRate}%";
@@ -1651,21 +1574,18 @@ namespace ScientistCardGame.Views
 
             if (playAgain)
             {
-                // DNA: Clean up before restart
-                if (_turnTimer != null) // ← FIX: Null check
+                if (_turnTimer != null)
                 {
                     _turnTimer.StopTimer();
                 }
 
-                // Restart game
                 InitializeGame();
             }
         }
 
-        // DNA: Show statistics
         private async void OnStatsClicked(object sender, EventArgs e)
         {
-            if (_statsService == null) // ← FIX: Null check at start
+            if (_statsService == null)
             {
                 await DisplayAlert("📊 Stats Not Available", "Statistics tracking is currently disabled", "OK");
                 return;
@@ -1696,6 +1616,7 @@ namespace ScientistCardGame.Views
                 }
             }
         }
+
         private Color GetCardBorderColor(Card card)
         {
             if (card.CardType == "DISCOVERY") return Colors.Green;
@@ -1724,24 +1645,18 @@ namespace ScientistCardGame.Views
             };
         }
 
-
-        // ========== DNA: SUMMONING SYSTEM (Alchemy & Ritual) ==========
-
         private async Task<(bool canSummon, string reason)> CheckSummonRequirements(Card card, Player player)
         {
-            // Check summon limit
             if (player.SummonsThisTurn >= player.MaxSummonsPerTurn)
             {
                 return (false, $"You can only summon {player.MaxSummonsPerTurn} cards per turn!");
             }
 
-            // SCHOLAR: Free summon
             if (card.Tier == "SCHOLAR")
             {
                 return (true, "");
             }
 
-            // MASTER: Alchemy - requires HP sacrifice
             if (card.Tier == "MASTER")
             {
                 if (player.HP <= 1000)
@@ -1751,18 +1666,17 @@ namespace ScientistCardGame.Views
                 return (true, "");
             }
 
-            // LEGENDARY: Ritual - requires tribute OR massive HP cost
             if (card.Tier == "LEGENDARY")
             {
                 var tributeCandidates = player.Field.Where(c => c.CardType == "CHARACTER").ToList();
 
                 if (tributeCandidates.Count >= 2)
                 {
-                    return (true, ""); // Can tribute
+                    return (true, "");
                 }
                 else if (player.HP > 3000)
                 {
-                    return (true, ""); // Can pay HP instead
+                    return (true, "");
                 }
                 else
                 {
@@ -1778,12 +1692,10 @@ namespace ScientistCardGame.Views
             var gameState = _gameEngine.GetGameState();
             bool success = false;
 
-            // SCHOLAR: Free summon
             if (card.Tier == "SCHOLAR")
             {
                 success = _gameEngine.PlayCharacterCard(card, player);
             }
-            // MASTER: Alchemy - HP cost
             else if (card.Tier == "MASTER")
             {
                 bool confirmed = await DisplayAlert(
@@ -1799,14 +1711,12 @@ namespace ScientistCardGame.Views
                 ShowMessage($"⚗️ Alchemy! Sacrificed 1000 HP to summon {card.Name}!");
                 success = _gameEngine.PlayCharacterCard(card, player);
             }
-            // LEGENDARY: Ritual - Tribute or HP cost
             else if (card.Tier == "LEGENDARY")
             {
                 var tributeCandidates = player.Field.Where(c => c.CardType == "CHARACTER").ToList();
 
                 if (tributeCandidates.Count >= 2)
                 {
-                    // Option: Tribute 2 cards
                     bool useTribute = await DisplayAlert(
                         "🌟 Legendary Ritual",
                         $"Summon {card.Name} ({card.ATK}/{card.DEF})?\n\nChoose summoning method:",
@@ -1816,7 +1726,6 @@ namespace ScientistCardGame.Views
 
                     if (useTribute)
                     {
-                        // Tribute first 2 cards
                         var tribute1 = tributeCandidates[0];
                         var tribute2 = tributeCandidates[1];
 
@@ -1836,7 +1745,6 @@ namespace ScientistCardGame.Views
                     }
                     else
                     {
-                        // Pay HP instead
                         if (player.HP <= 3000)
                         {
                             await DisplayAlert("⚠️ Not Enough HP", "You need more than 3000 HP!", "OK");
@@ -1849,7 +1757,6 @@ namespace ScientistCardGame.Views
                 }
                 else if (player.HP > 3000)
                 {
-                    // Only HP option available
                     bool confirmed = await DisplayAlert(
                         "🌟 Legendary Ritual",
                         $"Summon {card.Name} ({card.ATK}/{card.DEF})?\n\n💔 Cost: 3000 HP\n💚 Your HP: {player.HP}",
@@ -1871,7 +1778,6 @@ namespace ScientistCardGame.Views
                 success = _gameEngine.PlayCharacterCard(card, player);
             }
 
-            // DNA: AUTO-TRIGGER ON_SUMMON EFFECTS
             if (success && card.EffectTrigger == "ON_SUMMON")
             {
                 await Task.Delay(300);
@@ -1888,7 +1794,6 @@ namespace ScientistCardGame.Views
             return success;
         }
 
-        // DNA: Switch battle position
         private void OnSwitchPositionClicked(Card card)
         {
             card.BattlePosition = card.BattlePosition == "ATTACK" ? "DEFENSE" : "ATTACK";
@@ -1900,10 +1805,8 @@ namespace ScientistCardGame.Views
             UpdateGameUI();
         }
 
-        // DNA: Click deck to draw (only in draw phase)...........
         private async void OnPlayerDeckTapped(object sender, EventArgs e)
         {
-            // DNA: Check if game is initialized
             if (!_isInitialized || _gameEngine == null)
             {
                 await DisplayAlert("⏳ Please Wait", "Game is still initializing...", "OK");
@@ -1918,21 +1821,22 @@ namespace ScientistCardGame.Views
                 return;
             }
 
-            // Draw card
             var drawn = _gameEngine.ExecuteTurn();
             if (drawn.DrawnCard != null)
             {
+                // ← ADD SOUND HERE
+                await _audioService.PlaySoundEffectAsync("draw");
+
                 ShowMessage($"📥 Drew: {drawn.DrawnCard.Name}");
-                gameState.NextPhase(); // Auto-advance to Main Phase
+                gameState.NextPhase();
                 UpdateGameUI();
             }
         }
 
-        // DNA: View player graveyard (ALWAYS Player1)
         private async void OnPlayerGraveyardTapped(object sender, EventArgs e)
         {
             var gameState = _gameEngine.GetGameState();
-            var graveyard = gameState.Player1.Graveyard; // ← FIXED: Always Player1
+            var graveyard = gameState.Player1.Graveyard;
 
             if (graveyard.Count == 0)
             {
@@ -1953,11 +1857,11 @@ namespace ScientistCardGame.Views
 
             await DisplayAlert("⚰️ Your Graveyard", graveyardList, "Close");
         }
-        // DNA: View opponent graveyard (ALWAYS Player2)
+
         private async void OnOpponentGraveyardTapped(object sender, EventArgs e)
         {
             var gameState = _gameEngine.GetGameState();
-            var graveyard = gameState.Player2.Graveyard; // ← FIXED: Always Player2
+            var graveyard = gameState.Player2.Graveyard;
 
             if (graveyard.Count == 0)
             {
@@ -1979,12 +1883,10 @@ namespace ScientistCardGame.Views
             await DisplayAlert("⚰️ Opponent's Graveyard", graveyardList, "Close");
         }
 
-        // DNA: Show full card details
         private async void ShowCardDetails(Card card)
         {
             string details = "";
 
-            // Card Name and Type
             details += $"📜 {card.Name}\n";
             details += $"━━━━━━━━━━━━━━━━━\n\n";
 
@@ -2002,18 +1904,15 @@ namespace ScientistCardGame.Views
                 details += $"⚡ Effect Type: {card.EffectType}\n\n";
             }
 
-            // Effect
             details += $"✨ EFFECT:\n{card.SpecialEffect}";
 
             await DisplayAlert($"📜 {card.Name}", details, "Close");
         }
 
-        // DNA: Get active field/school bonuses for display
         private string GetActiveFieldBonuses(Player player)
         {
             List<string> bonuses = new List<string>();
 
-            // Field bonuses
             if (player.CountFieldCards("SCIENCE") >= 2)
                 bonuses.Add($"🔬 SCIENCE SYNERGY: +200 ATK ({player.CountFieldCards("SCIENCE")} cards)");
 
@@ -2026,39 +1925,31 @@ namespace ScientistCardGame.Views
             if (player.CountFieldCards("HUMANITIES") >= 2)
                 bonuses.Add($"📚 HUMANITIES SYNERGY: +200 ATK/DEF ({player.CountFieldCards("HUMANITIES")} cards)");
 
-            // Graveyard effects
             var graveyardEffects = _gameEngine.GetActiveGraveyardEffects(player);
             bonuses.AddRange(graveyardEffects);
 
             return bonuses.Count > 0 ? string.Join(" | ", bonuses) : "";
         }
-        // DNA: AI chooses smart battle position
+
         private string ChooseSmartPosition(Card card)
         {
-            // High ATK cards → Attack position
             if (card.ATK >= 2500)
                 return "ATTACK";
 
-            // High DEF, low ATK → Defense position
             if (card.DEF > card.ATK + 300)
                 return "DEFENSE";
 
-            // Balanced or offensive → Attack position
             if (card.ATK >= card.DEF)
                 return "ATTACK";
 
-            // Default: Defense for safety
             return "DEFENSE";
         }
 
-        // DNA: AI chooses best target to attack
         private Card ChooseSmartTarget(List<Card> targets, Card attacker)
         {
-            // Priority 1: Can we destroy a LEGENDARY?
             var legendaries = targets.Where(t => t.Tier == "LEGENDARY").ToList();
             if (legendaries.Any())
             {
-                // Attack weakest legendary we can destroy
                 var destroyable = legendaries.Where(t =>
                     (t.BattlePosition == "ATTACK" && attacker.CurrentATK > t.CurrentATK) ||
                     (t.BattlePosition == "DEFENSE" && attacker.CurrentATK > t.CurrentDEF)
@@ -2068,7 +1959,6 @@ namespace ScientistCardGame.Views
                     return destroyable.First();
             }
 
-            // Priority 2: Attack highest ATK card we can destroy
             var attackMode = targets.Where(t => t.BattlePosition == "ATTACK").ToList();
             if (attackMode.Any())
             {
@@ -2079,17 +1969,15 @@ namespace ScientistCardGame.Views
                     return destroyable.First();
             }
 
-            // Priority 3: Attack weakest DEF (easiest to destroy)
             var defenseMode = targets.Where(t => t.BattlePosition == "DEFENSE").ToList();
             if (defenseMode.Any())
             {
                 return defenseMode.OrderBy(t => t.CurrentDEF).First();
             }
 
-            // Fallback: Weakest overall
             return targets.OrderBy(t => t.BattlePosition == "ATTACK" ? t.CurrentATK : t.CurrentDEF).First();
         }
-        // DNA: Show deck statistics
+
         private async void OnDeckStatsRequested()
         {
             var gameState = _gameEngine.GetGameState();
@@ -2103,7 +1991,6 @@ namespace ScientistCardGame.Views
             stats += $"🔮 Traps: {player.Field.Count(c => c.CardType == "PARADOX")}\n";
             stats += $"⚰️ Graveyard: {player.Graveyard.Count}\n\n";
 
-            // Field composition
             if (player.Field.Any())
             {
                 stats += $"🌐 FIELD COMPOSITION:\n";
@@ -2115,7 +2002,7 @@ namespace ScientistCardGame.Views
 
             await DisplayAlert("📊 Deck Stats", stats, "Close");
         }
-        // DNA: Restart game
+
         private async void OnRestartClicked(object sender, EventArgs e)
         {
             bool confirm = await DisplayAlert(
@@ -2130,18 +2017,18 @@ namespace ScientistCardGame.Views
                 InitializeGame();
             }
         }
-        // DNA: Show big phase announcement (Yu-Gi-Oh style!)
+
         private async void ShowPhaseAnnouncement(string phaseName, string subtitle)
         {
             PhaseAnnouncementLabel.Text = phaseName;
             PhaseSubtitleLabel.Text = subtitle;
             PhaseAnnouncementOverlay.IsVisible = true;
 
-            await Task.Delay(1500); // Show for 1.5 seconds
+            await Task.Delay(1500);
 
             PhaseAnnouncementOverlay.IsVisible = false;
         }
-        // DNA: Show attack indicator animation
+
         private async Task ShowAttackIndicator(Card attacker, Card target = null)
         {
             AttackIndicatorOverlay.IsVisible = true;

@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="ScientistCardGame.Views.HowToPlayPage"
+             Title="How To Play"
+             BackgroundColor="#0f172a">
+
+    <ScrollView>
+        <VerticalStackLayout 
+            Spacing="20"
+            Padding="30"
+            Margin="0,20,0,0">
+
+            <!-- TITLE -->
+            <Label 
+                Text="❓ HOW TO PLAY"
+                FontSize="32"
+                FontAttributes="Bold"
+                TextColor="Gold"
+                HorizontalOptions="Center"
+                Margin="0,0,0,20"/>
+
+            <!-- OBJECTIVE -->
+            <Frame BackgroundColor="#1e293b" BorderColor="#475569" CornerRadius="15" Padding="20">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="🎯 OBJECTIVE" FontSize="22" FontAttributes="Bold" TextColor="Gold"/>
+                    <Label Text="Reduce your opponent's HP to 0 by summoning powerful scientists and attacking strategically!" 
+                           FontSize="16" TextColor="White" LineBreakMode="WordWrap"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- CARD TYPES -->
+            <Frame BackgroundColor="#1e293b" BorderColor="#475569" CornerRadius="15" Padding="20">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="🎴 CARD TYPES" FontSize="22" FontAttributes="Bold" TextColor="Gold"/>
+
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="⚔️ CHARACTER CARDS" FontSize="18" FontAttributes="Bold" TextColor="#3b82f6"/>
+                        <Label Text="Your main fighters! Each has ATK (attack) and DEF (defense) stats. Deploy them to battle your opponent." 
+                               FontSize="14" TextColor="#94a3b8" LineBreakMode="WordWrap"/>
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="🔬 DISCOVERY CARDS" FontSize="18" FontAttributes="Bold" TextColor="#22c55e"/>
+                        <Label Text="Magic cards with instant effects! Boost your cards, draw extra cards, or disrupt your opponent's strategy." 
+                               FontSize="14" TextColor="#94a3b8" LineBreakMode="WordWrap"/>
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="🔮 PARADOX CARDS" FontSize="18" FontAttributes="Bold" TextColor="#e91e63"/>
+                        <Label Text="Trap cards! Set them face-down and activate them when your opponent attacks. Perfect for surprise counters!" 
+                               FontSize="14" TextColor="#94a3b8" LineBreakMode="WordWrap"/>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- SUMMONING -->
+            <Frame BackgroundColor="#1e293b" BorderColor="#475569" CornerRadius="15" Padding="20">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="✨ SUMMONING SYSTEM" FontSize="22" FontAttributes="Bold" TextColor="Gold"/>
+
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="★ SCHOLAR (Free Summon)" FontSize="18" FontAttributes="Bold" TextColor="#CD7F32"/>
+                        <Label Text="Basic cards. Summon them for free with no cost!" 
+                               FontSize="14" TextColor="#94a3b8" LineBreakMode="WordWrap"/>
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="★★ MASTER (Alchemy)" FontSize="18" FontAttributes="Bold" TextColor="Silver"/>
+                        <Label Text="Intermediate cards. Costs 1000 HP to summon." 
+                               FontSize="14" TextColor="#94a3b8" LineBreakMode="WordWrap"/>
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="★★★ LEGENDARY (Ritual)" FontSize="18" FontAttributes="Bold" TextColor="Gold"/>
+                        <Label Text="Powerful cards! Tribute 2 cards OR pay 3000 HP to summon." 
+                               FontSize="14" TextColor="#94a3b8" LineBreakMode="WordWrap"/>
+                    </VerticalStackLayout>
+
+                    <Label Text="💡 TIP: You can summon 2 cards per turn!" 
+                           FontSize="14" FontAttributes="Italic" TextColor="#f59e0b" LineBreakMode="WordWrap"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- BATTLE POSITIONS -->
+            <Frame BackgroundColor="#1e293b" BorderColor="#475569" CornerRadius="15" Padding="20">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="⚔️ BATTLE POSITIONS" FontSize="22" FontAttributes="Bold" TextColor="Gold"/>
+
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="⚔️ ATTACK MODE" FontSize="18" FontAttributes="Bold" TextColor="#ef4444"/>
+                        <Label Text="Your card can attack! Uses ATK stat when battling." 
+                               FontSize="14" TextColor="#94a3b8" LineBreakMode="WordWrap"/>
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="🛡️ DEFENSE MODE" FontSize="18" FontAttributes="Bold" TextColor="#3b82f6"/>
+                        <Label Text="Your card cannot attack but uses DEF stat when defending." 
+                               FontSize="14" TextColor="#94a3b8" LineBreakMode="WordWrap"/>
+                    </VerticalStackLayout>
+
+                    <Label Text="💡 TIP: You can switch positions once per turn!" 
+                           FontSize="14" FontAttributes="Italic" TextColor="#f59e0b" LineBreakMode="WordWrap"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- FIELD SYNERGIES -->
+            <Frame BackgroundColor="#1e293b" BorderColor="#475569" CornerRadius="15" Padding="20">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="🌐 FIELD SYNERGIES" FontSize="22" FontAttributes="Bold" TextColor="Gold"/>
+
+                    <Label Text="Play multiple cards from the same FIELD to gain powerful bonuses!" 
+                           FontSize="14" TextColor="White" LineBreakMode="WordWrap"/>
+
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="🔬 SCIENCE (2+ cards): +200 ATK" FontSize="16" TextColor="#3b82f6"/>
+                        <Label Text="💭 PHILOSOPHY (2+ cards): +200 ATK" FontSize="16" TextColor="#9333ea"/>
+                        <Label Text="🙏 SPIRITUALITY (2+ cards): +200 DEF" FontSize="16" TextColor="#f59e0b"/>
+                        <Label Text="📚 HUMANITIES (2+ cards): +200 ATK/DEF" FontSize="16" TextColor="#22c55e"/>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- BATTLE -->
+            <Frame BackgroundColor="#1e293b" BorderColor="#475569" CornerRadius="15" Padding="20">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="⚔️ BATTLE MECHANICS" FontSize="22" FontAttributes="Bold" TextColor="Gold"/>
+
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="1️⃣ Each card can attack once per turn" FontSize="16" TextColor="White"/>
+                        <Label Text="2️⃣ Choose a target (or attack directly if opponent has no cards)" FontSize="16" TextColor="White"/>
+                        <Label Text="3️⃣ Compare ATK vs opponent's ATK or DEF" FontSize="16" TextColor="White"/>
+                        <Label Text="4️⃣ Higher stat wins! Loser's card is destroyed" FontSize="16" TextColor="White"/>
+                        <Label Text="5️⃣ If equal stats, both cards are destroyed" FontSize="16" TextColor="White"/>
+                    </VerticalStackLayout>
+
+                    <Label Text="⚠️ IMPORTANT: You cannot attack on Turn 1!" 
+                           FontSize="14" FontAttributes="Bold" TextColor="#ef4444" LineBreakMode="WordWrap"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- PHASES -->
+            <Frame BackgroundColor="#1e293b" BorderColor="#475569" CornerRadius="15" Padding="20">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="🔄 TURN PHASES" FontSize="22" FontAttributes="Bold" TextColor="Gold"/>
+
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="📥 DRAW PHASE - Draw 1 card" FontSize="16" TextColor="White"/>
+                        <Label Text="🎴 MAIN PHASE - Summon cards, play Discovery/Paradox cards" FontSize="16" TextColor="White"/>
+                        <Label Text="⚔️ BATTLE PHASE - Attack with your cards" FontSize="16" TextColor="White"/>
+                        <Label Text="🔚 END PHASE - Finish your turn" FontSize="16" TextColor="White"/>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- WINNING -->
+            <Frame BackgroundColor="#1e293b" BorderColor="Gold" CornerRadius="15" Padding="20">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="🏆 HOW TO WIN" FontSize="22" FontAttributes="Bold" TextColor="Gold" HorizontalOptions="Center"/>
+                    <Label Text="Reduce your opponent's HP from 8000 to 0!" 
+                           FontSize="18" FontAttributes="Bold" TextColor="White" HorizontalOptions="Center" HorizontalTextAlignment="Center"/>
+                    <Label Text="Build powerful combos, use field synergies, and attack strategically to claim victory!" 
+                           FontSize="14" TextColor="#94a3b8" HorizontalOptions="Center" HorizontalTextAlignment="Center" LineBreakMode="WordWrap"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- BACK BUTTON -->
+            <Button 
+                Text="← BACK TO MENU"
+                FontSize="18"
+                FontAttributes="Bold"
+                BackgroundColor="#475569"
+                TextColor="White"
+                HeightRequest="60"
+                CornerRadius="10"
+                Margin="0,20,0,20"
+                Clicked="OnBackClicked"/>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>
