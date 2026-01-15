@@ -21,6 +21,9 @@ namespace ScientistCardGame.Views
         private bool _isMultiplayerMode = false;
         private bool _isInitialized = false;
         private AudioService _audioService;  // ← ADD THIS
+        private bool _gameOverShown = false;
+        public enum AIDifficulty { EASY, NORMAL, HARD }
+        private AIDifficulty _aiDifficulty = AIDifficulty.NORMAL; // Default
 
 
         public GamePage()
@@ -40,6 +43,8 @@ namespace ScientistCardGame.Views
         {
             try
             {
+                _gameOverShown = false;
+
                 MessageLabel.Text = "STEP 1: Starting...";
                 await Task.Delay(500);
 
@@ -88,19 +93,30 @@ namespace ScientistCardGame.Views
                     await Task.Delay(500);
 
                     var importer = new DataImporter(_databaseService);
-
                     try
                     {
-                        using var stream = await FileSystem.OpenAppPackageFileAsync("Data/Scientists_Cards_100_With_Effects_U.xlsx");
-                        var tempPath = Path.Combine(FileSystem.CacheDirectory, "temp_cards.xlsx");
-
-                        using (var fileStream = File.Create(tempPath))
+                        // Copy CHARACTER cards to temp
+                        using var stream1 = await FileSystem.OpenAppPackageFileAsync("Data/Scientists_Cards_100_With_Effects_U.xlsx");
+                        var tempPath1 = Path.Combine(FileSystem.CacheDirectory, "temp_characters.xlsx");
+                        using (var fileStream1 = File.Create(tempPath1))
                         {
-                            await stream.CopyToAsync(fileStream);
+                            await stream1.CopyToAsync(fileStream1);
                         }
 
-                        await importer.ImportAllCardsAsync(tempPath, "Data/Special_Cards_20.xlsx");
-                        File.Delete(tempPath);
+                        // Copy SPECIAL cards to temp
+                        using var stream2 = await FileSystem.OpenAppPackageFileAsync("Data/Special_Cards_20.xlsx");
+                        var tempPath2 = Path.Combine(FileSystem.CacheDirectory, "temp_special.xlsx");
+                        using (var fileStream2 = File.Create(tempPath2))
+                        {
+                            await stream2.CopyToAsync(fileStream2);
+                        }
+
+                        // Import BOTH files
+                        await importer.ImportAllCardsAsync(tempPath1, tempPath2);
+
+                        // Clean up
+                        File.Delete(tempPath1);
+                        File.Delete(tempPath2);
                     }
                     catch (Exception ex)
                     {
@@ -139,7 +155,28 @@ namespace ScientistCardGame.Views
                 var gameState = _gameEngine.GetGameState();
                 _effectsEngine = new EffectsEngine(gameState);
 
-                MessageLabel.Text = "STEP 12: Creating AI opponent...";
+                MessageLabel.Text = "STEP 12: Choose AI difficulty...";
+                await Task.Delay(500);
+
+                // ✨ ASK PLAYER TO CHOOSE DIFFICULTY
+                string difficultyChoice = await DisplayActionSheet(
+                    "🤖 SELECT AI DIFFICULTY",
+                    null,
+                    null,
+                    "😊 EASY - AI makes mistakes",
+                    "⚔️ NORMAL - Balanced challenge",
+                    "💀 HARD - AI plays perfectly"
+                );
+
+                if (difficultyChoice?.Contains("EASY") == true)
+                    _aiDifficulty = AIDifficulty.EASY;
+                else if (difficultyChoice?.Contains("HARD") == true)
+                    _aiDifficulty = AIDifficulty.HARD;
+                else
+                    _aiDifficulty = AIDifficulty.NORMAL;
+
+                string difficultyName = _aiDifficulty.ToString();
+                MessageLabel.Text = $"STEP 12: Creating {difficultyName} AI opponent...";
                 await Task.Delay(500);
 
                 _aiOpponent = new AIOpponent(_gameEngine, _effectsEngine);
@@ -150,6 +187,21 @@ namespace ScientistCardGame.Views
                 UpdateGameUI();
 
                 ShowMessage("🎮 Game Started!");
+
+                // TEST ANIMATION - Remove this later
+                MessageLabel.Text = "Testing animations...";
+                await Task.Delay(1000);
+
+                var testCard = _gameEngine.GetGameState().CurrentPlayer.Field.FirstOrDefault();
+                if (testCard != null)
+                {
+                    await DisplayAlert("Animation Test", "Watch the first card get highlighted!", "OK");
+                    await HighlightTargetCard(testCard);
+                    await Task.Delay(1000);
+                    await DisplayAlert("Animation Test", "Now watch it get crushed!", "OK");
+                    await CrushCardAnimation(testCard);
+                }
+
 
                 _isInitialized = true;
             }
@@ -254,6 +306,8 @@ namespace ScientistCardGame.Views
                 HeightRequest = 200,
                 HasShadow = true
             };
+            // ✨ ADD THIS LINE:
+            frame.BindingContext = card;
 
             var stackLayout = new VerticalStackLayout
             {
@@ -461,6 +515,8 @@ namespace ScientistCardGame.Views
                 HasShadow = true
             };
 
+            frame.BindingContext = card;
+
             var stackLayout = new VerticalStackLayout
             {
                 Spacing = 5
@@ -580,6 +636,8 @@ namespace ScientistCardGame.Views
                 WidthRequest = 150,
                 HasShadow = true
             };
+
+            frame.BindingContext = card;
 
             var stackLayout = new VerticalStackLayout
             {
@@ -833,6 +891,7 @@ namespace ScientistCardGame.Views
 
             if (opponentCharacters.Count == 0)
             {
+                // DIRECT ATTACK
                 bool confirmDirect = await DisplayAlert(
                     "⚔️ Direct Attack!",
                     $"{attackingCard.Name} will attack directly for {attackingCard.CurrentATK} damage!",
@@ -843,15 +902,12 @@ namespace ScientistCardGame.Views
                 if (!confirmDirect)
                     return;
 
-                // ← ADD SOUND HERE
                 await _audioService.PlaySoundEffectAsync("attack");
-
                 await ShowAttackIndicator(attackingCard, null);
 
                 int baseATK = attackingCard.CurrentATK;
                 int finalATK = _gameEngine.CalculateFinalATK(attackingCard, null, gameState.CurrentPlayer);
                 int atkBonus = finalATK - baseATK;
-
                 string bonusInfo = "";
                 if (atkBonus > 0)
                     bonusInfo = $" (+{atkBonus} from synergy!)";
@@ -864,18 +920,107 @@ namespace ScientistCardGame.Views
             }
             else
             {
+                // ATTACK OPPONENT'S CARD
                 Card targetCard = await SelectAttackTarget(opponentCharacters, attackingCard);
-
                 if (targetCard == null)
                     return;
 
-                // ← ADD SOUND HERE
+                // ✨ NEW: AI TRAP ACTIVATION CHECK
+                var aiTraps = opponent.Field.Where(c => c.CardType == "PARADOX").ToList();
+                if (aiTraps.Any())
+                {
+                    ShowMessage($"⚠️ Your {attackingCard.Name} declares attack on {targetCard.Name}!");
+                    UpdateGameUI();
+                    await Task.Delay(1000);
+
+                    // AI decides if it should activate trap
+                    bool shouldActivate = false;
+                    Card trapToActivate = null;
+
+                    // SMART DECISION: Activate based on difficulty
+                    if (attackingCard.CurrentATK > targetCard.CurrentATK && targetCard.Tier == "LEGENDARY")
+                    {
+                        // Protecting legendary card
+                        shouldActivate = _aiDifficulty switch
+                        {
+                            AIDifficulty.EASY => _random.Next(100) < 40,    // 40% chance (often forgets)
+                            AIDifficulty.NORMAL => _random.Next(100) < 70,  // 70% chance
+                            AIDifficulty.HARD => true,                      // Always protects
+                            _ => true
+                        };
+                        trapToActivate = aiTraps.FirstOrDefault();
+                    }
+                    else if (attackingCard.CurrentATK >= 3000)
+                    {
+                        // Strong attack incoming
+                        int activateChance = _aiDifficulty switch
+                        {
+                            AIDifficulty.EASY => 20,    // 20% chance (rarely reacts)
+                            AIDifficulty.NORMAL => 60,  // 60% chance
+                            AIDifficulty.HARD => 90,    // 90% chance (almost always)
+                            _ => 60
+                        };
+                        shouldActivate = _random.Next(100) < activateChance;
+                        trapToActivate = aiTraps.FirstOrDefault();
+                    }
+                    else
+                    {
+                        // Normal situation
+                        int randomChance = _aiDifficulty switch
+                        {
+                            AIDifficulty.EASY => 10,    // 10% chance (rarely uses)
+                            AIDifficulty.NORMAL => 30,  // 30% chance
+                            AIDifficulty.HARD => 50,    // 50% chance (uses often)
+                            _ => 30
+                        };
+                        shouldActivate = _random.Next(100) < randomChance;
+                        trapToActivate = aiTraps.FirstOrDefault();
+                    }
+
+                    if (shouldActivate && trapToActivate != null)
+                    {
+                        await _audioService.PlaySoundEffectAsync("trap_set");
+
+                        ShowMessage($"🔮 AI ACTIVATED TRAP: {trapToActivate.Name}!");
+                        await Task.Delay(1500);
+
+                        var trapResult = _effectsEngine.ExecuteCardEffect(trapToActivate, opponent, gameState.CurrentPlayer);
+
+                        opponent.Field.Remove(trapToActivate);
+                        opponent.SendToGraveyard(trapToActivate);
+
+                        ShowMessage($"🔮 {trapResult.Message}");
+                        UpdateGameUI();
+                        await Task.Delay(1500);
+
+                        // If trap negated attack, stop here
+                        if (trapResult.NegatedAttack)
+                        {
+                            ShowMessage($"🛡️ Your attack was NEGATED by {trapToActivate.Name}!");
+                            attackingCard.HasAttackedThisTurn = true;
+                            UpdateGameUI();
+                            return;
+                        }
+
+                        // If trap redirected, choose new target
+                        if (trapResult.RedirectTarget && opponentCharacters.Count > 1)
+                        {
+                            targetCard = opponentCharacters[_random.Next(opponentCharacters.Count)];
+                            ShowMessage($"🎯 Attack redirected to {targetCard.Name}!");
+                            await Task.Delay(1000);
+                        }
+                    }
+                }
+
+                // ✨ NEW: HIGHLIGHT TARGET CARD
+                await HighlightTargetCard(targetCard);
+                await Task.Delay(500);
+
                 await _audioService.PlaySoundEffectAsync("attack");
 
                 int baseATK = attackingCard.CurrentATK;
                 int finalATK = _gameEngine.CalculateFinalATK(attackingCard, targetCard, gameState.CurrentPlayer);
                 int atkBonus = finalATK - baseATK;
-
                 string bonusInfo = "";
                 if (atkBonus > 0)
                     bonusInfo = $" (+{atkBonus} bonus!)";
@@ -883,16 +1028,26 @@ namespace ScientistCardGame.Views
                     bonusInfo = $" ({atkBonus} penalty!)";
 
                 ShowMessage($"⚔️ {attackingCard.Name}: {baseATK} ATK{bonusInfo} = {finalATK} total!");
-                await Task.Delay(1000);
+                await Task.Delay(800);
 
                 await ShowAttackIndicator(attackingCard, targetCard);
 
                 var result = _gameEngine.ExecuteBattle(attackingCard, targetCard,
-                    gameState.CurrentPlayer, opponent);
+    gameState.CurrentPlayer, opponent);
 
-                // ← ADD DESTROY SOUND IF CARD DESTROYED
-                if (result.DestroyedCard != null)
+                // ✨ CRUSH ANIMATION - Handle all destruction cases
+                if (result.Message.Contains("MUTUAL DESTRUCTION"))
                 {
+                    // Both cards destroyed - animate both
+                    var task1 = CrushCardAnimation(attackingCard);
+                    var task2 = CrushCardAnimation(targetCard);
+                    await Task.WhenAll(task1, task2);
+                    await _audioService.PlaySoundEffectAsync("destroy");
+                }
+                else if (result.DestroyedCard != null)
+                {
+                    // Single card destroyed
+                    await CrushCardAnimation(result.DestroyedCard);
                     await _audioService.PlaySoundEffectAsync("destroy");
                 }
 
@@ -900,7 +1055,6 @@ namespace ScientistCardGame.Views
             }
 
             attackingCard.HasAttackedThisTurn = true;
-
             gameState.CheckVictoryCondition();
             UpdateGameUI();
         }
@@ -1331,6 +1485,30 @@ namespace ScientistCardGame.Views
                 }
             }
 
+            // ✨ NEW: SMART POSITION SWITCHING
+            var playerAttackers = gameState.Player1.Field.Where(c => c.CardType == "CHARACTER").ToList();
+            if (playerAttackers.Any())
+            {
+                int strongestPlayerATK = playerAttackers.Max(c => c.CurrentATK);
+
+                // Check each AI card and switch weak ones to defense
+                foreach (var aiCard in ai.Field.Where(c => c.CardType == "CHARACTER").ToList())
+                {
+                    // If AI card is weak compared to player's strongest card
+                    if (aiCard.BattlePosition == "ATTACK" && aiCard.CurrentATK < strongestPlayerATK)
+                    {
+                        // Switch to defense if DEF is better than ATK
+                        if (aiCard.CurrentDEF > aiCard.CurrentATK)
+                        {
+                            aiCard.BattlePosition = "DEFENSE";
+                            log += $"🛡️ AI switched {aiCard.Name} to DEFENSE mode (outmatched by your {strongestPlayerATK} ATK card)\n";
+                            UpdateGameUI();
+                            await Task.Delay(500);
+                        }
+                    }
+                }
+            }
+
             var effectCards = ai.Field.Where(c =>
                 c.CardType == "CHARACTER" &&
                 c.EffectTrigger == "MANUAL" &&
@@ -1350,6 +1528,61 @@ namespace ScientistCardGame.Views
                 await Task.Delay(700);
             }
 
+            // ✨ SMART DISCOVERY CARD USAGE
+            var discoveryCards = ai.Hand.Where(c => c.CardType == "DISCOVERY").ToList();
+            if (discoveryCards.Any())
+            {
+                Card bestDiscovery = null;
+
+                // Prioritize based on situation
+                if (ai.Hand.Count <= 2)
+                {
+                    // Low hand? Use draw cards first!
+                    bestDiscovery = discoveryCards.FirstOrDefault(d =>
+                        d.SpecialEffect.Contains("draw", StringComparison.OrdinalIgnoreCase));
+                }
+                else if (ai.Field.Count(c => c.CardType == "CHARACTER") >= 2)
+                {
+                    // Have monsters? Use boost cards!
+                    bestDiscovery = discoveryCards.FirstOrDefault(d =>
+                        d.SpecialEffect.Contains("ATK", StringComparison.OrdinalIgnoreCase) ||
+                        d.SpecialEffect.Contains("DEF", StringComparison.OrdinalIgnoreCase));
+                }
+
+                // If no specific card found, pick based on difficulty
+                if (bestDiscovery == null)
+                {
+                    int useChance = _aiDifficulty switch
+                    {
+                        AIDifficulty.EASY => 30,    // 30% chance (rarely uses cards)
+                        AIDifficulty.NORMAL => 60,  // 60% chance
+                        AIDifficulty.HARD => 90,    // 90% chance (almost always uses)
+                        _ => 60
+                    };
+
+                    if (_random.Next(100) < useChance)
+                    {
+                        bestDiscovery = discoveryCards[_random.Next(discoveryCards.Count)];
+                    }
+                }
+
+                if (bestDiscovery != null)
+                {
+                    await _audioService.PlaySoundEffectAsync("discovery");
+
+                    var result = _effectsEngine.ExecuteCardEffect(bestDiscovery, ai, gameState.Player1);
+                    ai.Hand.Remove(bestDiscovery);
+                    ai.SendToGraveyard(bestDiscovery);
+
+                    log += $"🔬 AI strategically used {bestDiscovery.Name}!\n";
+                    log += $"   {result.Message}\n";
+
+                    UpdateGameUI();
+                    await Task.Delay(700);
+                }
+            }
+
+            // PLAY PARADOX CARDS
             var paradoxCards = ai.Hand.Where(c => c.CardType == "PARADOX").ToList();
             int aiAttackers = ai.Field.Count(c => c.CardType == "CHARACTER");
 
@@ -1487,10 +1720,42 @@ namespace ScientistCardGame.Views
                 }
                 else
                 {
-                    // ← ADD SOUND HERE
-                    await _audioService.PlaySoundEffectAsync("attack");
-
                     var target = ChooseSmartTarget(playerDefenders, attacker);
+
+                    // ✨ NEW: CALCULATE IF ATTACK WILL WIN
+                    int attackerFinalATK = _gameEngine.CalculateFinalATK(attacker, target, ai);
+                    int targetValue = target.BattlePosition == "ATTACK"
+                        ? target.CurrentATK
+                        : target.CurrentDEF;
+
+                    // ✨ SMART DECISION: Don't attack if we'll lose! (Based on difficulty)
+                    bool willLose = attackerFinalATK <= targetValue && target.BattlePosition == "ATTACK";
+
+                    if (willLose)
+                    {
+                        // Difficulty affects decision making
+                        bool attackAnyway = _aiDifficulty switch
+                        {
+                            AIDifficulty.EASY => _random.Next(100) < 60,    // 60% chance to attack anyway (dumb)
+                            AIDifficulty.NORMAL => _random.Next(100) < 20,  // 20% chance (sometimes mistakes)
+                            AIDifficulty.HARD => false,                     // Never attacks when losing
+                            _ => false
+                        };
+
+                        if (!attackAnyway)
+                        {
+                            log += $"🤔 AI's {attacker.Name} ({attackerFinalATK} ATK) decided NOT to attack {target.Name} ({targetValue} ATK) - too risky!\n";
+                            continue; // Skip this attack
+                        }
+                        else
+                        {
+                            log += $"😵 AI's {attacker.Name} recklessly attacks {target.Name} (bad decision)!\n";
+                            // Continue with attack (AI makes mistake)
+                        }
+                    }
+
+                    // Attack is safe or beneficial - proceed!
+                    await _audioService.PlaySoundEffectAsync("attack");
 
                     int baseATK = attacker.CurrentATK;
                     int finalATK = _gameEngine.CalculateFinalATK(attacker, target, ai);
@@ -1507,9 +1772,19 @@ namespace ScientistCardGame.Views
 
                     var result = _gameEngine.ExecuteBattle(attacker, target, ai, player);
 
-                    // ← ADD DESTROY SOUND IF CARD DESTROYED
-                    if (result.DestroyedCard != null)
+                    // ✨ CRUSH ANIMATION - Handle all destruction cases
+                    if (result.Message.Contains("MUTUAL DESTRUCTION"))
                     {
+                        // Both cards destroyed - animate both
+                        var task1 = CrushCardAnimation(attacker);
+                        var task2 = CrushCardAnimation(target);
+                        await Task.WhenAll(task1, task2);
+                        await _audioService.PlaySoundEffectAsync("destroy");
+                    }
+                    else if (result.DestroyedCard != null)
+                    {
+                        // Single card destroyed - CRUSH IT!
+                        await CrushCardAnimation(result.DestroyedCard);
                         await _audioService.PlaySoundEffectAsync("destroy");
                     }
 
@@ -1540,6 +1815,10 @@ namespace ScientistCardGame.Views
 
         private async void ShowGameOver(Player winner)
         {
+            // ✨ PREVENT MULTIPLE CALLS
+            if (_gameOverShown) return;
+            _gameOverShown = true;
+
             bool playerWon = winner.PlayerId == 1;
 
             // ← ADD SOUND HERE
@@ -2042,6 +2321,109 @@ namespace ScientistCardGame.Views
             await Task.Delay(1200);
 
             AttackIndicatorOverlay.IsVisible = false;
+        }
+        protected override void OnDisappearing()
+        {
+            base.OnDisappearing();
+
+            // Stop background music when leaving game
+            _audioService?.StopBackgroundMusic();
+        }
+
+        // ✨ METHOD 1: HIGHLIGHT TARGET CARD
+        private async Task HighlightTargetCard(Card targetCard)
+        {
+            Frame cardFrame = FindCardFrame(targetCard);
+            if (cardFrame == null) return;
+
+            var originalBorderColor = cardFrame.BorderColor;
+            var originalBackgroundColor = cardFrame.BackgroundColor;
+
+            // Flash red 3 times to show target
+            for (int i = 0; i < 3; i++)
+            {
+                cardFrame.BorderColor = Colors.Red;
+                cardFrame.BackgroundColor = Color.FromArgb("#FF0000").WithAlpha(0.3f);
+                await Task.Delay(150);
+
+                cardFrame.BorderColor = originalBorderColor;
+                cardFrame.BackgroundColor = originalBackgroundColor;
+                await Task.Delay(150);
+            }
+        }
+
+        // ✨ METHOD 2: FIND CARD FRAME IN UI
+        private Frame FindCardFrame(Card card)
+        {
+            // Search through entire page recursively
+            return FindCardFrameRecursive(this.Content, card);
+        }
+
+        private Frame FindCardFrameRecursive(IView element, Card card)
+        {
+            if (element == null) return null;
+
+            // Check if this element is the card frame we're looking for
+            if (element is Frame frame && frame.BindingContext == card)
+                return frame;
+
+            // Check if element has children (Layout, Grid, StackLayout, etc.)
+            if (element is Layout layout)
+            {
+                foreach (var child in layout.Children)
+                {
+                    var result = FindCardFrameRecursive(child, card);
+                    if (result != null) return result;
+                }
+            }
+
+            // Check ScrollView
+            if (element is ScrollView scrollView)
+            {
+                return FindCardFrameRecursive(scrollView.Content, card);
+            }
+
+            return null;
+        }
+
+        // ✨ METHOD 3: CRUSH CARD ANIMATION
+        private async Task CrushCardAnimation(Card card)
+        {
+            Frame cardFrame = FindCardFrame(card);
+            if (cardFrame == null) return;
+
+            try
+            {
+                // Shake effect
+                await cardFrame.RotateTo(-15, 50);
+                await cardFrame.RotateTo(15, 50);
+                await cardFrame.RotateTo(-15, 50);
+                await cardFrame.RotateTo(0, 50);
+
+                // Simultaneous: fade, shrink, red flash
+                var fadeTask = cardFrame.FadeTo(0.3, 200);
+                var scaleTask = cardFrame.ScaleTo(0.7, 200);
+                await Task.WhenAll(fadeTask, scaleTask);
+
+                // Flash red (destruction)
+                cardFrame.BackgroundColor = Colors.Red.WithAlpha(0.8f);
+                await Task.Delay(150);
+
+                // Final destruction - fade out and spin
+                var finalFade = cardFrame.FadeTo(0, 400);
+                var finalScale = cardFrame.ScaleTo(0.1, 400);
+                var finalRotate = cardFrame.RotateTo(180, 400);
+                await Task.WhenAll(finalFade, finalScale, finalRotate);
+
+                // Reset for next render
+                cardFrame.Opacity = 1;
+                cardFrame.Scale = 1;
+                cardFrame.Rotation = 0;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Crush animation error: {ex.Message}");
+            }
         }
     }
 }

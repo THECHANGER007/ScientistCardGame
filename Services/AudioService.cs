@@ -10,7 +10,7 @@ namespace ScientistCardGame.Services
 
         public bool IsMusicEnabled { get; set; } = true;
         public bool IsSoundEnabled { get; set; } = true;
-        public float MusicVolume { get; set; } = 0.3f;  // ← Lower default volume
+        public float MusicVolume { get; set; } = 0.3f;
         public float SoundVolume { get; set; } = 0.5f;
 
         public AudioService(IAudioManager audioManager)
@@ -22,13 +22,18 @@ namespace ScientistCardGame.Services
         // Play background music (looping)
         public async Task PlayBackgroundMusicAsync(string fileName)
         {
+            if (!IsMusicEnabled) return;
+
             try
             {
-                if (!IsMusicEnabled) return;
+                // CRITICAL FIX: Stop any existing music first!
+                if (_backgroundMusic != null)
+                {
+                    _backgroundMusic.Stop();
+                    _backgroundMusic.Dispose();
+                    _backgroundMusic = null;
+                }
 
-                StopBackgroundMusic();
-
-                // ← FIXED PATH: Just filename, not "Resources/Raw/"
                 var stream = await FileSystem.OpenAppPackageFileAsync(fileName);
                 _backgroundMusic = _audioManager.CreatePlayer(stream);
                 _backgroundMusic.Volume = MusicVolume;
@@ -37,8 +42,7 @@ namespace ScientistCardGame.Services
             }
             catch (Exception ex)
             {
-                // Silently fail if audio not available
-                System.Diagnostics.Debug.WriteLine($"Music not available: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Error playing background music: {ex.Message}");
             }
         }
 
@@ -66,7 +70,7 @@ namespace ScientistCardGame.Services
                 player.Volume = SoundVolume;
                 player.Play();
 
-                // Clean up after 3 seconds (most sound effects are shorter)
+                // Clean up after 3 seconds
                 _ = Task.Run(async () =>
                 {
                     await Task.Delay(3000);

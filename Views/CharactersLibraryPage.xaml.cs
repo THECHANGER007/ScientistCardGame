@@ -16,13 +16,12 @@ namespace ScientistCardGame.Views
         private async void LoadCharacters()
         {
             var dbService = new DatabaseService(Path.Combine(FileSystem.AppDataDirectory, "scientistcards.db"));
-            var deckBuilder = new DeckBuilderService(dbService);
-            await deckBuilder.LoadAvailableCardsAsync();
 
-            var deck = await deckBuilder.CreateStarterDeckAsync("Temp");
+            // Get ALL cards directly from database
+            var allCards = await dbService.GetAllCardsAsync();
 
-            // Use deck.Cards - THIS IS THE RIGHT PROPERTY!
-            _allCharacters = deck.Cards
+            // Filter to CHARACTER cards only and remove duplicates
+            _allCharacters = allCards
                 .Where(c => c.CardType == "CHARACTER")
                 .GroupBy(c => c.Name)
                 .Select(g => g.First())
@@ -181,27 +180,17 @@ namespace ScientistCardGame.Views
 
         private async void OnCharacterTapped(Card character)
         {
-            string details = $"📜 {character.Name}\n";
-            details += $"━━━━━━━━━━━━━━━━━━━━━━━\n\n";
+            string biography = CharacterBiographies.GetBiography(character.Name);
 
+            string details = biography + "\n\n";
+            details += $"━━━━━━━━━━━━━━━━━━━━━━━\n";
+            details += $"🎮 IN-GAME STATS:\n\n";
             details += $"🎖️ TIER: {character.Tier}\n";
             details += $"🌐 FIELD: {character.Field}\n";
             details += $"🏛️ SCHOOL: {character.School}\n";
             details += $"⚔️ ATK: {character.ATK}\n";
             details += $"🛡️ DEF: {character.DEF}\n\n";
-
-            details += $"✨ SPECIAL EFFECT:\n";
-            details += $"{character.SpecialEffect}\n\n";
-
-            if (!string.IsNullOrEmpty(character.EffectTrigger))
-            {
-                details += $"⚡ TRIGGER: {character.EffectTrigger}\n";
-            }
-
-            if (!string.IsNullOrEmpty(character.EffectType))
-            {
-                details += $"🎯 TYPE: {character.EffectType}\n";
-            }
+            details += $"✨ SPECIAL EFFECT:\n{character.SpecialEffect}";
 
             await DisplayAlert(
                 $"📚 {character.Name}",

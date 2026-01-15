@@ -11,11 +11,24 @@ namespace ScientistCardGame.Views
         {
             InitializeComponent();
 
-            // Initialize audio
             _audioService = new AudioService(AudioManager.Current);
-            _ = _audioService.PlayBackgroundMusicAsync("background_music.mp3");
         }
 
+        protected override void OnAppearing()
+        {
+            base.OnAppearing();
+
+            // Only play music when menu appears
+            _ = _audioService.PlayBackgroundMusicAsync("End_of_All _Equations.mp3");
+        }
+
+        protected override void OnDisappearing()
+        {
+            base.OnDisappearing();
+
+            // CRITICAL: Stop music when leaving menu
+            _audioService.StopBackgroundMusic();
+        }
         private async void OnDuelClicked(object sender, EventArgs e)
         {
             await _audioService.PlaySoundEffectAsync("click");

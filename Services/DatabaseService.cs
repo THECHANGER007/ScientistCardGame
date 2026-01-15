@@ -105,8 +105,10 @@ namespace ScientistCardGame.Services
             int count = await GetCardCountAsync();
             return count == 0;
         }
-
-       
+        public Task<List<Card>> GetAllCardsAsync()
+        {
+            return _database.Table<Card>().ToListAsync();
+        }
 
     }
 }
